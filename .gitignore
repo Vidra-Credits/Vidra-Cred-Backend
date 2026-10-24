@@ -1,0 +1,7 @@
+node_modules/
+.next/
+.env
+*.tsbuildinfo
+backups/*.sql
+docs/qa/
+docs/sources/

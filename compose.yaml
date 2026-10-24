@@ -1,0 +1,45 @@
+name: vidracred
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: vidracred
+      POSTGRES_USER: vidracred
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD en .env}
+      TZ: America/Lima
+    ports:
+      - "127.0.0.1:55432:5432"
+    volumes:
+      - vidracred_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vidracred -d vidracred"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+  setup:
+    build: .
+    image: vidracred-local:1.0.0
+    command: ["./node_modules/.bin/tsx", "scripts/setup.ts"]
+    environment:
+      DATABASE_URL: postgresql://vidracred:${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD en .env}@db:5432/vidracred
+      DEMO_PASSWORD: ${DEMO_PASSWORD:?Defina DEMO_PASSWORD en .env}
+    depends_on:
+      db:
+        condition: service_healthy
+  app:
+    build: .
+    image: vidracred-local:1.0.0
+    command: ["npm", "run", "start"]
+    environment:
+      DATABASE_URL: postgresql://vidracred:${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD en .env}@db:5432/vidracred
+      APP_ORIGIN: ${APP_ORIGIN:?Defina APP_ORIGIN en .env}
+      TZ: America/Lima
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      setup:
+        condition: service_completed_successfully
+    restart: unless-stopped
+volumes:
+  vidracred_data:

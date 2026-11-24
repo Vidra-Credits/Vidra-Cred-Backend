@@ -1,14 +1,16 @@
 import {randomBytes,scryptSync,timingSafeEqual,createHash} from "node:crypto";
 import {pool,type DB} from "./db";
 import {RuleError} from "./finance";
-export type Actor={id:string;storeId:string|null;clientId:string|null;role:"SISTEMA"|"NEGOCIO"|"CLIENTE";name:string;email:string};
+export type Actor={id:string;storeId:string|null;clientId:string|null;role:"SISTEMA"|"NEGOCIO"|"CLIENTE";name:string;email:string;readOnly?:boolean};
+export const GUEST_EMAIL="invitado@vidracred.demo";
 export const hashToken=(token:string)=>createHash("sha256").update(token).digest("hex");
 export function hashPassword(password:string) {const salt=randomBytes(16).toString("hex");return salt+":"+scryptSync(password,salt,64).toString("hex");}
 export function verifyPassword(password:string,hash:string) {
   const [salt,key]=hash.split(":");if(!salt||!key||key.length!==128)return false;
   return timingSafeEqual(Buffer.from(key,"hex"),scryptSync(password,salt,64));
 }
-export const actorFromRow=(r:Record<string,string>):Actor=>({id:r.id,storeId:r.store_id??null,clientId:r.client_id??null,role:r.role as Actor["role"],name:r.name,email:r.email});
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const actorFromRow=(r:Record<string,any>):Actor=>({id:r.id,storeId:r.store_id??null,clientId:r.client_id??null,role:r.role as Actor["role"],name:r.name,email:r.email,readOnly:r.read_only===true});
 export async function sessionActor(token:string|undefined) {
   if(!token)return null;
   const {rows}=await pool.query("SELECT u.* FROM sessions s JOIN users u ON u.id=s.user_id LEFT JOIN stores t ON t.id=u.store_id LEFT JOIN clients c ON c.id=u.client_id WHERE s.token_hash=$1 AND s.expires_at>now() AND u.active AND (u.role='SISTEMA' OR t.active) AND (u.role<>'CLIENTE' OR c.active)",[hashToken(token)]);

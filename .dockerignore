@@ -2,6 +2,7 @@ node_modules
 .next
 .env
 backups
-docs/qa
-docs/sources
+*.docx
+
 .git
+

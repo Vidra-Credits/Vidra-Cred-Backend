@@ -1,0 +1,13 @@
+import {writeFile,mkdir} from "node:fs/promises";
+import {pool} from "../src/lib/db";
+import {loadCredits} from "../src/lib/service";
+import {statement} from "../src/lib/finance";
+import {IDS} from "./demo";
+const credits=(await loadCredits(pool,IDS.store)).filter(c=>[IDS.case1,IDS.case2,IDS.case3].includes(c.id));
+const cases=credits.sort((a,b)=>a.id.localeCompare(b.id)).map(c=>({case:Number(c.id.slice(-1)),client:c.clientName,package:c.packageName,schedule:c.schedule,statement:statement(c,"2026-09-26")}));
+await mkdir("docs",{recursive:true});
+await writeFile("docs/casos-verificados.json",JSON.stringify({asOf:"2026-09-26",cases},null,2));
+const headers=["Caso","Cuota","Vencimiento","Gracia","Saldo inicial","Interés","Cuota pactada","Amortización","Saldo final","Pago real","Días atraso","Mora","Total pagado","Estado"];
+const rows=cases.flatMap(c=>[[c.case,0,c.schedule.baseDate,"—","","","","",c.schedule.initialBalance,"","","","","FILA_0"],...c.statement.rows.map(r=>[c.case,r.number,r.dueDate,r.grace,r.opening,r.interest,r.payment,r.principal,r.closing,r.paidDate??"",r.daysLate,r.lateFee,r.totalPaid,r.status])]);
+await writeFile("docs/casos-verificados.csv","\ufeff"+[headers,...rows].map(row=>row.map(v=>'"'+String(v).replaceAll('"','""')+'"').join(";")).join("\r\n"));
+await pool.end();console.log("Casos exportados desde PostgreSQL al 26/09/2026.");

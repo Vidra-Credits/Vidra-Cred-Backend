@@ -5,10 +5,10 @@ services:
     environment:
       POSTGRES_DB: vidracred
       POSTGRES_USER: vidracred
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD en .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-vidracred_local_2026}
       TZ: America/Lima
     ports:
-      - "127.0.0.1:55432:5432"
+      - "127.0.0.1:${DB_PORT:-55432}:5432"
     volumes:
       - vidracred_data:/var/lib/postgresql/data
     healthcheck:
@@ -22,8 +22,9 @@ services:
     image: vidracred-local:1.0.0
     command: ["./node_modules/.bin/tsx", "scripts/setup.ts"]
     environment:
-      DATABASE_URL: postgresql://vidracred:${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD en .env}@db:5432/vidracred
-      DEMO_PASSWORD: ${DEMO_PASSWORD:?Defina DEMO_PASSWORD en .env}
+      DATABASE_URL: postgresql://vidracred:${POSTGRES_PASSWORD:-vidracred_local_2026}@db:5432/vidracred
+      DEMO_PASSWORD: ${DEMO_PASSWORD:-Vidra2026!}
+      SEED_DEMO: ${SEED_DEMO:-1}
     depends_on:
       db:
         condition: service_healthy
@@ -32,11 +33,11 @@ services:
     image: vidracred-local:1.0.0
     command: ["npm", "run", "start"]
     environment:
-      DATABASE_URL: postgresql://vidracred:${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD en .env}@db:5432/vidracred
-      APP_ORIGIN: ${APP_ORIGIN:?Defina APP_ORIGIN en .env}
+      DATABASE_URL: postgresql://vidracred:${POSTGRES_PASSWORD:-vidracred_local_2026}@db:5432/vidracred
+      APP_ORIGIN: http://localhost:${APP_PORT:-3000}
       TZ: America/Lima
     ports:
-      - "127.0.0.1:3000:3000"
+      - "127.0.0.1:${APP_PORT:-3000}:3000"
     depends_on:
       setup:
         condition: service_completed_successfully

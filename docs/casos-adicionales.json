@@ -1,0 +1,578 @@
+{
+  "moraTea": "0.35",
+  "cases": [
+    {
+      "id": "A",
+      "title": "Caso 2 con cambio de tasa",
+      "note": "Mismo crédito del caso 2 (4 800, 5 meses, gracia TPPSSSSSSS) con la TEA de 25 % hasta la cuota 5 y de 18 % desde la cuota 6. Los atrasos son los del caso 2: 5 días en la cuota 5 y 12 días en la cuota 7.",
+      "result": {
+        "schedule": {
+          "input": {
+            "amount": "4800",
+            "currency": "PEN",
+            "tea": "0.25",
+            "purchaseDate": "2026-03-28",
+            "months": 5,
+            "cutDay": 25,
+            "payDay": 5,
+            "grace": "TPPSSSSSSS",
+            "rateSteps": [
+              {
+                "from": 6,
+                "tea": "0.18"
+              }
+            ],
+            "frequency": "QUINCENAL",
+            "mode": "CUOTAS",
+            "mora": "0.35"
+          },
+          "cutDate": "2026-04-25",
+          "baseDate": "2026-05-05",
+          "dueDays": [
+            5,
+            20
+          ],
+          "initialDays": 38,
+          "initialBalance": "4914.40",
+          "initialInterest": "114.40",
+          "teq": "0.009341005370090979408353363068",
+          "ordinaryPayment": "735.34",
+          "rows": [
+            {
+              "number": 1,
+              "dueDate": "2026-05-20",
+              "grace": "T",
+              "opening": "4914.40",
+              "interest": "45.91",
+              "payment": "0.00",
+              "principal": "0.00",
+              "closing": "4960.31",
+              "capitalized": "45.91",
+              "tea": "0.250000000000",
+              "teq": "0.009341005370090979408353363068"
+            },
+            {
+              "number": 2,
+              "dueDate": "2026-06-05",
+              "grace": "P",
+              "opening": "4960.31",
+              "interest": "46.33",
+              "payment": "46.33",
+              "principal": "0.00",
+              "closing": "4960.31",
+              "capitalized": "0.00",
+              "tea": "0.250000000000",
+              "teq": "0.009341005370090979408353363068"
+            },
+            {
+              "number": 3,
+              "dueDate": "2026-06-20",
+              "grace": "P",
+              "opening": "4960.31",
+              "interest": "46.33",
+              "payment": "46.33",
+              "principal": "0.00",
+              "closing": "4960.31",
+              "capitalized": "0.00",
+              "tea": "0.250000000000",
+              "teq": "0.009341005370090979408353363068"
+            },
+            {
+              "number": 4,
+              "dueDate": "2026-07-05",
+              "grace": "S",
+              "opening": "4960.31",
+              "interest": "46.33",
+              "payment": "735.34",
+              "principal": "689.01",
+              "closing": "4271.30",
+              "capitalized": "0.00",
+              "tea": "0.250000000000",
+              "teq": "0.009341005370090979408353363068"
+            },
+            {
+              "number": 5,
+              "dueDate": "2026-07-20",
+              "grace": "S",
+              "opening": "4271.30",
+              "interest": "39.90",
+              "payment": "735.34",
+              "principal": "695.44",
+              "closing": "3575.86",
+              "capitalized": "0.00",
+              "tea": "0.250000000000",
+              "teq": "0.009341005370090979408353363068"
+            },
+            {
+              "number": 6,
+              "dueDate": "2026-08-05",
+              "grace": "S",
+              "opening": "3575.86",
+              "interest": "24.75",
+              "payment": "730.09",
+              "principal": "705.34",
+              "closing": "2870.52",
+              "capitalized": "0.00",
+              "tea": "0.180000000000",
+              "teq": "0.006920270105041650083992986742"
+            },
+            {
+              "number": 7,
+              "dueDate": "2026-08-20",
+              "grace": "S",
+              "opening": "2870.52",
+              "interest": "19.86",
+              "payment": "730.09",
+              "principal": "710.23",
+              "closing": "2160.29",
+              "capitalized": "0.00",
+              "tea": "0.180000000000",
+              "teq": "0.006920270105041650083992986742"
+            },
+            {
+              "number": 8,
+              "dueDate": "2026-09-05",
+              "grace": "S",
+              "opening": "2160.29",
+              "interest": "14.95",
+              "payment": "730.09",
+              "principal": "715.14",
+              "closing": "1445.15",
+              "capitalized": "0.00",
+              "tea": "0.180000000000",
+              "teq": "0.006920270105041650083992986742"
+            },
+            {
+              "number": 9,
+              "dueDate": "2026-09-20",
+              "grace": "S",
+              "opening": "1445.15",
+              "interest": "10.00",
+              "payment": "730.09",
+              "principal": "720.09",
+              "closing": "725.06",
+              "capitalized": "0.00",
+              "tea": "0.180000000000",
+              "teq": "0.006920270105041650083992986742"
+            },
+            {
+              "number": 10,
+              "dueDate": "2026-10-05",
+              "grace": "S",
+              "opening": "725.06",
+              "interest": "5.02",
+              "payment": "730.08",
+              "principal": "725.06",
+              "closing": "0.00",
+              "capitalized": "0.00",
+              "tea": "0.180000000000",
+              "teq": "0.006920270105041650083992986742"
+            }
+          ],
+          "totals": {
+            "interest": "413.78",
+            "cashInterest": "253.47",
+            "capitalized": "160.31",
+            "payments": "5213.78",
+            "principal": "4960.31"
+          },
+          "policyVersion": "VC-2026.1"
+        },
+        "rows": [
+          {
+            "number": 1,
+            "dueDate": "2026-05-20",
+            "grace": "T",
+            "opening": "4914.40",
+            "interest": "45.91",
+            "payment": "0.00",
+            "principal": "0.00",
+            "closing": "4960.31",
+            "capitalized": "45.91",
+            "tea": "0.250000000000",
+            "teq": "0.009341005370090979408353363068",
+            "requestedDelay": 0,
+            "paidDate": null,
+            "daysLate": 0,
+            "lateFee": "0.00",
+            "total": "0.00"
+          },
+          {
+            "number": 2,
+            "dueDate": "2026-06-05",
+            "grace": "P",
+            "opening": "4960.31",
+            "interest": "46.33",
+            "payment": "46.33",
+            "principal": "0.00",
+            "closing": "4960.31",
+            "capitalized": "0.00",
+            "tea": "0.250000000000",
+            "teq": "0.009341005370090979408353363068",
+            "requestedDelay": 0,
+            "paidDate": "2026-06-05",
+            "daysLate": 0,
+            "lateFee": "0.00",
+            "total": "46.33"
+          },
+          {
+            "number": 3,
+            "dueDate": "2026-06-20",
+            "grace": "P",
+            "opening": "4960.31",
+            "interest": "46.33",
+            "payment": "46.33",
+            "principal": "0.00",
+            "closing": "4960.31",
+            "capitalized": "0.00",
+            "tea": "0.250000000000",
+            "teq": "0.009341005370090979408353363068",
+            "requestedDelay": 0,
+            "paidDate": "2026-06-20",
+            "daysLate": 0,
+            "lateFee": "0.00",
+            "total": "46.33"
+          },
+          {
+            "number": 4,
+            "dueDate": "2026-07-05",
+            "grace": "S",
+            "opening": "4960.31",
+            "interest": "46.33",
+            "payment": "735.34",
+            "principal": "689.01",
+            "closing": "4271.30",
+            "capitalized": "0.00",
+            "tea": "0.250000000000",
+            "teq": "0.009341005370090979408353363068",
+            "requestedDelay": 0,
+            "paidDate": "2026-07-05",
+            "daysLate": 0,
+            "lateFee": "0.00",
+            "total": "735.34"
+          },
+          {
+            "number": 5,
+            "dueDate": "2026-07-20",
+            "grace": "S",
+            "opening": "4271.30",
+            "interest": "39.90",
+            "payment": "735.34",
+            "principal": "695.44",
+            "closing": "3575.86",
+            "capitalized": "0.00",
+            "tea": "0.250000000000",
+            "teq": "0.009341005370090979408353363068",
+            "requestedDelay": 5,
+            "paidDate": "2026-07-25",
+            "daysLate": 5,
+            "lateFee": "3.07",
+            "total": "738.41"
+          },
+          {
+            "number": 6,
+            "dueDate": "2026-08-05",
+            "grace": "S",
+            "opening": "3575.86",
+            "interest": "24.75",
+            "payment": "730.09",
+            "principal": "705.34",
+            "closing": "2870.52",
+            "capitalized": "0.00",
+            "tea": "0.180000000000",
+            "teq": "0.006920270105041650083992986742",
+            "requestedDelay": 0,
+            "paidDate": "2026-08-05",
+            "daysLate": 0,
+            "lateFee": "0.00",
+            "total": "730.09"
+          },
+          {
+            "number": 7,
+            "dueDate": "2026-08-20",
+            "grace": "S",
+            "opening": "2870.52",
+            "interest": "19.86",
+            "payment": "730.09",
+            "principal": "710.23",
+            "closing": "2160.29",
+            "capitalized": "0.00",
+            "tea": "0.180000000000",
+            "teq": "0.006920270105041650083992986742",
+            "requestedDelay": 12,
+            "paidDate": "2026-09-01",
+            "daysLate": 12,
+            "lateFee": "7.34",
+            "total": "737.43"
+          },
+          {
+            "number": 8,
+            "dueDate": "2026-09-05",
+            "grace": "S",
+            "opening": "2160.29",
+            "interest": "14.95",
+            "payment": "730.09",
+            "principal": "715.14",
+            "closing": "1445.15",
+            "capitalized": "0.00",
+            "tea": "0.180000000000",
+            "teq": "0.006920270105041650083992986742",
+            "requestedDelay": 0,
+            "paidDate": "2026-09-05",
+            "daysLate": 0,
+            "lateFee": "0.00",
+            "total": "730.09"
+          },
+          {
+            "number": 9,
+            "dueDate": "2026-09-20",
+            "grace": "S",
+            "opening": "1445.15",
+            "interest": "10.00",
+            "payment": "730.09",
+            "principal": "720.09",
+            "closing": "725.06",
+            "capitalized": "0.00",
+            "tea": "0.180000000000",
+            "teq": "0.006920270105041650083992986742",
+            "requestedDelay": 0,
+            "paidDate": "2026-09-20",
+            "daysLate": 0,
+            "lateFee": "0.00",
+            "total": "730.09"
+          },
+          {
+            "number": 10,
+            "dueDate": "2026-10-05",
+            "grace": "S",
+            "opening": "725.06",
+            "interest": "5.02",
+            "payment": "730.08",
+            "principal": "725.06",
+            "closing": "0.00",
+            "capitalized": "0.00",
+            "tea": "0.180000000000",
+            "teq": "0.006920270105041650083992986742",
+            "requestedDelay": 0,
+            "paidDate": "2026-10-05",
+            "daysLate": 0,
+            "lateFee": "0.00",
+            "total": "730.08"
+          }
+        ],
+        "moraTea": "0.350000000000",
+        "ted": "0.000833971429",
+        "totals": {
+          "installments": "5213.78",
+          "lateFee": "10.41",
+          "totalPaid": "5224.19",
+          "interest": "413.78",
+          "financialCost": "424.19"
+        }
+      }
+    },
+    {
+      "id": "B",
+      "title": "Caso 1 como pago único",
+      "note": "Compra de 2 000 con TEA de 20 % pagada de una sola vez en la fecha de pago (05/08/2026). El interés cubre los 28 días entre la compra y esa fecha. Se paga 10 días tarde.",
+      "result": {
+        "schedule": {
+          "input": {
+            "amount": "2000",
+            "currency": "PEN",
+            "tea": "0.20",
+            "purchaseDate": "2026-07-08",
+            "months": 0,
+            "cutDay": 25,
+            "payDay": 5,
+            "grace": "",
+            "mode": "UNICO",
+            "frequency": "QUINCENAL",
+            "rateSteps": [],
+            "mora": "0.35"
+          },
+          "cutDate": "2026-07-25",
+          "baseDate": "2026-08-05",
+          "dueDays": [
+            5,
+            20
+          ],
+          "initialDays": 28,
+          "initialBalance": "2000.00",
+          "initialInterest": "0.00",
+          "teq": "0.007625659905369429082556207726",
+          "ordinaryPayment": "2028.56",
+          "rows": [
+            {
+              "number": 1,
+              "dueDate": "2026-08-05",
+              "grace": "S",
+              "opening": "2000.00",
+              "interest": "28.56",
+              "payment": "2028.56",
+              "principal": "2000.00",
+              "closing": "0.00",
+              "capitalized": "0.00",
+              "tea": "0.200000000000",
+              "teq": "0.007625659905369429082556207726"
+            }
+          ],
+          "totals": {
+            "interest": "28.56",
+            "cashInterest": "28.56",
+            "capitalized": "0.00",
+            "payments": "2028.56",
+            "principal": "2000.00"
+          },
+          "policyVersion": "VC-2026.1"
+        },
+        "rows": [
+          {
+            "number": 1,
+            "dueDate": "2026-08-05",
+            "grace": "S",
+            "opening": "2000.00",
+            "interest": "28.56",
+            "payment": "2028.56",
+            "principal": "2000.00",
+            "closing": "0.00",
+            "capitalized": "0.00",
+            "tea": "0.200000000000",
+            "teq": "0.007625659905369429082556207726",
+            "requestedDelay": 10,
+            "paidDate": "2026-08-15",
+            "daysLate": 10,
+            "lateFee": "16.98",
+            "total": "2045.54"
+          }
+        ],
+        "moraTea": "0.350000000000",
+        "ted": "0.000833971429",
+        "totals": {
+          "installments": "2028.56",
+          "lateFee": "16.98",
+          "totalPaid": "2045.54",
+          "interest": "28.56",
+          "financialCost": "45.54"
+        }
+      }
+    },
+    {
+      "id": "C",
+      "title": "Caso 1 con tasa nominal",
+      "note": "Compra de 2 000 con TNA de 18 % capitalizada mensualmente, equivalente a una TEA de 19.5618 %: TEA = (1 + 0.18/12)^12 − 1. Atraso de 5 días en la cuota 2.",
+      "result": {
+        "schedule": {
+          "input": {
+            "amount": "2000",
+            "currency": "PEN",
+            "tea": "0.195618171462",
+            "purchaseDate": "2026-07-08",
+            "months": 1,
+            "cutDay": 25,
+            "payDay": 5,
+            "grace": "SS",
+            "frequency": "QUINCENAL",
+            "mode": "CUOTAS",
+            "rateSteps": [],
+            "mora": "0.35"
+          },
+          "cutDate": "2026-07-25",
+          "baseDate": "2026-08-05",
+          "dueDays": [
+            5,
+            20
+          ],
+          "initialDays": 28,
+          "initialBalance": "2027.99",
+          "initialInterest": "27.99",
+          "teq": "0.007472083980510538079507702376",
+          "ordinaryPayment": "1025.37",
+          "rows": [
+            {
+              "number": 1,
+              "dueDate": "2026-08-20",
+              "grace": "S",
+              "opening": "2027.99",
+              "interest": "15.15",
+              "payment": "1025.37",
+              "principal": "1010.22",
+              "closing": "1017.77",
+              "capitalized": "0.00",
+              "tea": "0.195618171462",
+              "teq": "0.007472083980510538079507702376"
+            },
+            {
+              "number": 2,
+              "dueDate": "2026-09-05",
+              "grace": "S",
+              "opening": "1017.77",
+              "interest": "7.60",
+              "payment": "1025.37",
+              "principal": "1017.77",
+              "closing": "0.00",
+              "capitalized": "0.00",
+              "tea": "0.195618171462",
+              "teq": "0.007472083980510538079507702376"
+            }
+          ],
+          "totals": {
+            "interest": "50.74",
+            "cashInterest": "22.75",
+            "capitalized": "27.99",
+            "payments": "2050.74",
+            "principal": "2027.99"
+          },
+          "policyVersion": "VC-2026.1"
+        },
+        "rows": [
+          {
+            "number": 1,
+            "dueDate": "2026-08-20",
+            "grace": "S",
+            "opening": "2027.99",
+            "interest": "15.15",
+            "payment": "1025.37",
+            "principal": "1010.22",
+            "closing": "1017.77",
+            "capitalized": "0.00",
+            "tea": "0.195618171462",
+            "teq": "0.007472083980510538079507702376",
+            "requestedDelay": 0,
+            "paidDate": "2026-08-20",
+            "daysLate": 0,
+            "lateFee": "0.00",
+            "total": "1025.37"
+          },
+          {
+            "number": 2,
+            "dueDate": "2026-09-05",
+            "grace": "S",
+            "opening": "1017.77",
+            "interest": "7.60",
+            "payment": "1025.37",
+            "principal": "1017.77",
+            "closing": "0.00",
+            "capitalized": "0.00",
+            "tea": "0.195618171462",
+            "teq": "0.007472083980510538079507702376",
+            "requestedDelay": 5,
+            "paidDate": "2026-09-10",
+            "daysLate": 5,
+            "lateFee": "4.28",
+            "total": "1029.65"
+          }
+        ],
+        "moraTea": "0.350000000000",
+        "ted": "0.000833971429",
+        "totals": {
+          "installments": "2050.74",
+          "lateFee": "4.28",
+          "totalPaid": "2055.02",
+          "interest": "50.74",
+          "financialCost": "55.02"
+        }
+      }
+    }
+  ]
+}

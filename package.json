@@ -1,5 +1,5 @@
 {
-  "name": "vidracred-backend",
+  "name": "vidracred",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -8,27 +8,30 @@
     "build": "next build",
     "start": "next start --hostname 0.0.0.0",
     "typecheck": "tsc --noEmit --incremental false",
-    "test": "tsx --test tests/finance.test.ts",
+    "test": "tsx --test tests/finance.test.ts tests/sandbox.test.ts tests/monthly.test.ts",
     "test:integration": "tsx --env-file=.env --test tests/integration.test.ts",
+    "test:views": "tsx --env-file=.env --test tests/render.test.tsx",
     "test:http": "tsx --env-file=.env --test tests/http.test.ts",
     "db:setup": "tsx --env-file=.env scripts/setup.ts",
     "db:backup": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/backup.ps1",
     "verify": "npm run typecheck && npm test && npm run test:integration"
   },
   "dependencies": {
-    "next": "16.4.2",
+    "decimal.js": "10.6.0",
+    "lucide-react": "^0.468.0",
+    "next": "16.4.6",
+    "pg": "8.23.1",
     "react": "19.3.1",
     "react-dom": "19.3.1",
-    "decimal.js": "10.6.0",
-    "pg": "8.23.1",
+    "sharp": "0.35.5",
     "zod": "4.6.7"
   },
   "devDependencies": {
-    "typescript": "^5.9.3",
-    "tsx": "4.23.15",
     "@types/node": "^22.19.0",
     "@types/pg": "^8.15.5",
     "@types/react": "^19.2.0",
-    "@types/react-dom": "^19.2.0"
+    "@types/react-dom": "^19.2.0",
+    "tsx": "4.23.15",
+    "typescript": "^5.9.3"
   }
 }

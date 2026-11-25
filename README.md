@@ -1,6 +1,6 @@
 # VidraCred
 
-Proyecto de cuenta corriente comercial. Informe vigente: [Informe Word y PDF](https://github.com/Vidra-Credits/VidraCred-Entrega/tree/main/Entrega_TF).
+Proyecto de cuenta corriente comercial.
 
 ## Iniciar
 
@@ -63,5 +63,6 @@ Los CSV y JSON de [casos](docs) se regeneran con `npx tsx scripts/export-monthly
 ## Datos y respaldos
 
 PostgreSQL conserva los datos en el volumen de Docker. `docker compose stop` detiene el proyecto sin borrarlos. Los scripts `backup.ps1` y `restore.ps1` permiten respaldar y recuperar la base; los respaldos existentes se conservan en `backups`.
+
 
 

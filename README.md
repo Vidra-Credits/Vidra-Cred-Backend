@@ -1,6 +1,6 @@
 # VidraCred
 
-Proyecto de cuenta corriente comercial.
+Proyecto de cuenta corriente comercial. Aplicación publicada: [vidracred.vercel.app](https://vidracred.vercel.app/). El informe académico se conserva localmente y no forma parte de este repositorio.
 
 ## Iniciar
 

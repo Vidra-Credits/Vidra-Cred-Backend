@@ -11,7 +11,7 @@ export async function migrate(db:DB) {
   await db.query("SELECT pg_advisory_xact_lock(77152026)");
   const found=await db.query("SELECT to_regclass('schema_migrations') AS found");
   const applied=found.rows[0].found?(await db.query("SELECT version FROM schema_migrations")).rows.map(r=>r.version as number):[];
-  for(const [version,file] of [[1,"001_schema.sql"],[2,"002_autoservicio.sql"],[3,"003_enunciado.sql"],[4,"004_invitado.sql"],[5,"005_revision_final.sql"],[6,"006_cotizaciones_imagenes.sql"]] as const)
+  for(const [version,file] of [[1,"001_schema.sql"],[2,"002_autoservicio.sql"],[3,"003_enunciado.sql"],[4,"004_invitado.sql"],[5,"005_revision_final.sql"],[6,"006_cotizaciones_imagenes.sql"],[7,"007_precio_contado.sql"]] as const)
     if(!applied.includes(version))await db.query(await readFile(fileURLToPath(new URL("../db/"+file,import.meta.url)),"utf8"));
 }
 export async function seed(db:DB) {
@@ -36,12 +36,12 @@ export async function seed(db:DB) {
   ];
   for(const u of users)await db.query("INSERT INTO users(id,store_id,client_id,email,name,role,password_hash) VALUES($1,$2,$3,$4,$5,$6,$7) ON CONFLICT (id) DO NOTHING",[...u,hash]);
   const packages=[
-    [IDS.goteros,IDS.store,"Goteros ámbar de 50 ml","Frascos de vidrio ámbar con pipeta y tapa roscada.","PEN","2000","1850","Caja","goteros"],
-    [IDS.cosmetica,IDS.store,"Envases para cosmética","Tubos blancos de 60 ml con tapa y frascos con gotero.","PEN","4800","4500","Lote","cosmetica"],
-    [IDS.frascos,IDS.store,"Frascos de vidrio de 20 ml","Frascos transparentes con tapa negra y sello de silicona.","PEN","1500","1390","Caja","frascos"],
-    [IDS.antecedente,IDS.store,"Envases surtidos para reventa","Botellas, frascos y envases de plástico en un solo lote.","PEN","2300","2150","Lote","mayorista"],
-    [IDS.usdPackage,IDS.store,"Envases para exportación","Botellas y frascos protegidos en una caja con separadores.","USD","1000","920","Caja","exportacion"],
-    [IDS.otherPackage,IDS.otherStore,"Caja de conservas","Surtido de conservas para reventa.","PEN","1000","940","Caja",null]
+    [IDS.goteros,IDS.store,"Goteros ámbar de 50 ml","Frascos de vidrio ámbar con pipeta y tapa roscada.","PEN","2000","2160","Caja","goteros"],
+    [IDS.cosmetica,IDS.store,"Envases para cosmética","Tubos blancos de 60 ml con tapa y frascos con gotero.","PEN","4800","5184","Lote","cosmetica"],
+    [IDS.frascos,IDS.store,"Frascos de vidrio de 20 ml","Frascos transparentes con tapa negra y sello de silicona.","PEN","1500","1620","Caja","frascos"],
+    [IDS.antecedente,IDS.store,"Envases surtidos para reventa","Botellas, frascos y envases de plástico en un solo lote.","PEN","2300","2484","Lote","mayorista"],
+    [IDS.usdPackage,IDS.store,"Envases para exportación","Botellas y frascos protegidos en una caja con separadores.","USD","1000","1080","Caja","exportacion"],
+    [IDS.otherPackage,IDS.otherStore,"Caja de conservas","Surtido de conservas para reventa.","PEN","1000","1080","Caja",null]
   ] as const;
   for(const [id,store,name,detail,currency,amount,cash,unit,photo] of packages) {
     await db.query("INSERT INTO packages(id,store_id,name,detail,currency,amount,cash_price,unit,brand,image) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)",

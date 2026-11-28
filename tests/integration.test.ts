@@ -66,7 +66,7 @@ test("vista previa obligatoria, registro idempotente y dos compras simultáneas 
 test("un cambio posterior del cliente, tienda o paquete no modifica el crédito pactado",async()=>{
   const c=(await loadCredits(pool,IDS.store,IDS.jemsa))[0],original=JSON.stringify(c.schedule);
   await saveEntity(business,"clients",{id:IDS.jemsa,storeId:IDS.store,name:"Jemsa Perú",document:"20600121171",phone:"",address:"",currency:"PEN",tea:"0.25",creditLimit:"3000",maxMonths:2,active:true});
-  await saveEntity(business,"packages",{id:IDS.frascos,storeId:IDS.store,name:"Frascos editados",detail:"Nuevo contenido",currency:"PEN",amount:"1800",cashPrice:"1600",active:true});
+  await saveEntity(business,"packages",{id:IDS.frascos,storeId:IDS.store,name:"Frascos editados",detail:"Nuevo contenido",currency:"PEN",amount:"1800",cashPrice:"1900",active:true});
   const fresh=(await loadCredits(pool,IDS.store,IDS.jemsa))[0];assert.equal(JSON.stringify(fresh.schedule),original);assert.equal(fresh.packageName,"Frascos de vidrio de 20 ml");
 });
 test("pagos: rechaza gracia, duplicados, pago incompleto y fechas inválidas; libera línea solo al cobrar",async()=>{
@@ -208,14 +208,14 @@ test("tasa por tramos en un crédito real: se recalcula, se guarda, es idempoten
 });
 test("producto completo y pago único: modalidad de venta, precio contado, interés por días y mora sobre la cuota única",async()=>{
   const pack={storeId:IDS.store,name:"Caja de vasos",detail:"Vasos de 10 oz",currency:"PEN",amount:"2000",active:true,brand:"Vidra Plastic",unit:"Caja"};
-  await assert.rejects(()=>saveEntity(business,"packages",{...pack,cashPrice:"2100"}),/debe ser menor/);
-  await assert.rejects(()=>saveEntity(business,"packages",{...pack,cashPrice:"2000"}),/debe ser menor/);
-  await assert.rejects(()=>saveEntity(business,"packages",{...pack,cashPrice:"1800",unit:""}),/unidad/);
-  const unico=await saveEntity(business,"packages",{...pack,cashPrice:"1800",saleMode:"UNICO"});
-  const cuotas=await saveEntity(business,"packages",{...pack,name:"Caja en cuotas",cashPrice:"1900",saleMode:"CUOTAS"});
+  await assert.rejects(()=>saveEntity(business,"packages",{...pack,cashPrice:"1900"}),/debe ser mayor/);
+  await assert.rejects(()=>saveEntity(business,"packages",{...pack,cashPrice:"2000"}),/debe ser mayor/);
+  await assert.rejects(()=>saveEntity(business,"packages",{...pack,cashPrice:"2160",unit:""}),/unidad/);
+  const unico=await saveEntity(business,"packages",{...pack,cashPrice:"2160",saleMode:"UNICO"});
+  const cuotas=await saveEntity(business,"packages",{...pack,name:"Caja en cuotas",cashPrice:"2160",saleMode:"CUOTAS"});
   const both=(await bootstrap(business)).packages;
-  const u=both.find(p=>p.id===unico.id)!;assert.equal(u.brand,"Vidra Plastic");assert.equal(u.unit,"Caja");assert.equal(u.cash_price,"1800.00");assert.equal(u.sale_mode,"UNICO");
-  assert.equal(both.find(p=>p.id===IDS.frascos)!.sale_mode,"AMBOS");assert.equal(both.find(p=>p.id===IDS.frascos)!.cash_price,"1600.00");
+  const u=both.find(p=>p.id===unico.id)!;assert.equal(u.brand,"Vidra Plastic");assert.equal(u.unit,"Caja");assert.equal(u.cash_price,"2160.00");assert.equal(u.sale_mode,"UNICO");
+  assert.equal(both.find(p=>p.id===IDS.frascos)!.sale_mode,"AMBOS");assert.equal(both.find(p=>p.id===IDS.frascos)!.cash_price,"1900.00");
   const {id:clientId}=await saveEntity(business,"clients",newClient({document:"20512345683",name:"Pago Único SAC"}));
   const base={storeId:IDS.store,clientId,purchaseDate:"2026-07-08"};
   await assert.rejects(()=>getQuote(pool,business,{...base,packageId:unico.id,months:1,grace:"SS"}),/solo se vende a pago único/);
@@ -284,7 +284,7 @@ test("solicitud mensual conserva su frecuencia hasta la aprobación",async()=>{
 test("cotización: huella obligatoria, rechazo de cambios y reintentos de la misma aprobación",async()=>{
   const customerInput=()=>quoted(customer,IDS.goteros,2);
   const product={id:IDS.goteros,storeId:IDS.store,name:"Goteros ámbar de 50 ml",detail:"Producto de prueba",
-    currency:"PEN",amount:"2100",cashPrice:"1850",active:true};
+    currency:"PEN",amount:"2100",cashPrice:"2300",active:true};
   const before=await customerInput();
   await saveEntity(business,"packages",product);
   await assert.rejects(()=>createRequest(customer,before),/Vuelva a cotizar/);

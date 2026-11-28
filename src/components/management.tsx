@@ -212,7 +212,7 @@ export function Packages({data,refresh,notify}:{data:Data;refresh:Refresh;notify
         <Field label="Descripción" hint="Indique qué recibe el comprador." error={err}><textarea name="detail" maxLength={500} rows={2} defaultValue={p?.detail}/></Field>
         <div className="form-grid">
           <Field label="Monto a financiar" hint="Precio de lista antes de intereses; de 1 000 a 5 000, en múltiplos de 100." error={err}><input name="amount" type="number" required min={1000} max={5000} step={100} defaultValue={p?.amount??1000}/></Field>
-          <Field label="Precio al contado" hint="Debe ser mayor que el monto a financiar." error={err}><input name="cashPrice" type="number" required min="0.01" max={1000000} step="0.01" defaultValue={p?.cash_price??1080}/></Field>
+          <Field label="Precio al contado" hint="Debe ser menor que el monto a financiar." error={err}><input name="cashPrice" type="number" required min="0.01" max={1000000} step="0.01" defaultValue={p?.cash_price??925.93}/></Field>
           <Field label="Moneda" hint="Moneda de ambos precios." error={err}><select name="currency" defaultValue={p?.currency??"PEN"}><option>PEN</option><option>USD</option></select></Field>
           <Field label="Modalidad de venta" hint="Opciones que el cliente podrá cotizar." error={err}><select name="saleMode" defaultValue={p?.sale_mode??"AMBOS"}>{Object.entries(saleModeLabels).map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></Field>
           <Field label="Unidad de venta" hint="Ejemplo, caja, paquete o docena." error={err}><input name="unit" required maxLength={30} defaultValue={p?.unit??"Paquete"}/></Field>

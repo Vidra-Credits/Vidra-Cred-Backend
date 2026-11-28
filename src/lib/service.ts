@@ -195,7 +195,7 @@ async function saveEntityInTransaction(db:DB,actor:Actor,kind:string,raw:unknown
       const cash=v.cashPrice;
       decimalInput(cash,"cashPrice","0.01","1000000");
       if(!new D(cash).eq(money(cash)))throw new RuleError("Use como máximo dos decimales.","cashPrice");
-      if(new D(cash).lte(v.amount))throw new RuleError("El precio al contado debe ser mayor que el monto financiado.","cashPrice");
+      if(new D(cash).gte(v.amount))throw new RuleError("El precio al contado debe ser menor que el monto financiado.","cashPrice");
       const id=v.id??randomUUID();
       const values=[id,v.storeId,v.name,v.detail,v.currency,v.amount,v.active,v.image??null,cash,v.brand,v.supplier,v.unit,v.saleMode,photo?.data??null,photo?.mime??null];
       if(v.id) {

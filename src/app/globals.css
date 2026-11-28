@@ -149,6 +149,14 @@ fieldset { min-width: 0; border: 0; padding: 0; margin: 0; }
 .catalog-line span { color: var(--teal-dark); font-size: .88rem; font-weight: 580; }
 .catalog-line strong { color: var(--ink-deep); font-size: 1.2rem; }
 .catalog-line p { font-size: .86rem; }
+.catalog-page .page-title { margin-block-end: .85rem; }
+.catalog-page h1 { font-size: clamp(1.75rem,3.2vw,2.35rem); }
+.catalog-page .catalog-line { padding-block: .62rem; margin-block-end: .85rem; }
+.catalog-page .product-photo { aspect-ratio: 2.05; }
+.catalog-page .product-body { padding: .8rem; gap: .46rem; }
+.catalog-page .product-body p { font-size: .89rem; }
+.catalog-page .prices { padding-block: .46rem .25rem; }
+.request-accounts { margin-block-start: .9rem; }
 .badge { width: max-content; max-width: 100%; display: inline-block; padding: .24rem .49rem; border-radius: 4px; font-size: .79rem; font-weight: 640; line-height: 1.22; overflow-wrap: anywhere; }
 .badge.positive { background: #e2f4e9; color: #155438; }
 .badge.info { background: #e7f1fa; color: #1d5277; }
@@ -192,7 +200,7 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
 .advanced { border: 1px solid var(--line); background: #f9fbfb; border-radius: 7px; min-width: 0; }
 .advanced > summary { padding: .55rem .7rem; }
 .advanced > div { padding: .35rem .7rem .7rem; }
-.advanced summary, .full-schedule summary, .quote-schedule summary, .history-filter summary { font-weight: 640; }
+.advanced summary, .full-schedule summary, .history-filter summary { font-weight: 640; }
 .purchase-layout { display: grid; grid-template-columns: minmax(0,1.45fr) minmax(0,1fr); gap: 1rem; align-items: start; }
 .rate-step { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)) auto; gap: .65rem; align-items: center; }
 .image-field { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,2fr); gap: .85rem; align-items: center; }
@@ -235,7 +243,7 @@ body:has(dialog[open]) { overflow: hidden; }
 }
 .financial-table caption { text-align: left; padding: .45rem .65rem; color: var(--muted); }
 .financial-table th, .financial-table td {
-  padding: .42rem .33rem; border: 1px solid var(--line); overflow-wrap: anywhere;
+  padding: .42rem .25rem; border: 1px solid var(--line); overflow-wrap: anywhere;
 }
 .financial-table thead th { line-height: 1.15; }
 .financial-table thead, .financial-table tfoot { background: #eaf1f4; }
@@ -249,8 +257,10 @@ body:has(dialog[open]) { overflow: hidden; }
 .sheet-row-prefix { display: none; }
 .sheet-index { width: 3.6rem; }
 .sheet-date { width: 7.1rem; }
-.statement-date { width: 6.2rem; }
-.statement-status { width: 6.5rem; }
+.statement-date { width: 6rem; }
+.statement-status { width: 6rem; }
+.statement-grace { width: 3.1rem; }
+.statement-rate { width: 5rem; }
 .sheet-short { width: 3.8rem; }
 .schedule-editable td:has(input), .schedule-editable td:has(select) { padding: 0; }
 .schedule-editable th:has(.sheet-row-button) { padding-block: 0; }
@@ -321,13 +331,12 @@ body:has(dialog[open]) { overflow: hidden; }
 .simulator-shell > header { background: var(--ink-deep); color: #e4f1f3; }
 .simulator-main { padding-block-start: 1.05rem; }
 .simulator-main .page-title { margin-block-end: .85rem; }
-.simulator-main .metrics { margin-block: .9rem; }
 .simulator-card .card-head { padding-block: .65rem; }
 .simulator-settings { display: flex; flex-direction: column; gap: .4rem; padding: .5rem 1.15rem; }
 .settings-fields { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: .65rem .9rem; }
 .settings-fields input[type=number], .settings-fields input[inputmode=decimal], .settings-fields select { min-height: 36px; padding-block: .32rem; }
 .simulator-settings .advanced { max-width: 100%; }
-.explore-toggle { display: flex; align-items: center; gap: .45rem; margin: .55rem 0; font-size: .85rem; }
+.explore-toggle { display: flex; align-items: center; gap: .45rem; margin: 0 .7rem .7rem; font-size: .85rem; }
 .reference-status { font-size: .88rem; color: var(--danger); }
 .row-editor { background: #fbfdfd; padding: 1rem 1.15rem; display: flex; flex-direction: column; gap: .8rem; }
 .row-editor > button { align-self: flex-start; }
@@ -335,6 +344,8 @@ body:has(dialog[open]) { overflow: hidden; }
 .row-formulas ul { list-style: none; margin: .5rem 0 0; padding: 0; display: grid; gap: .36rem; }
 .row-formulas code { overflow-wrap: anywhere; font-size: .87rem; }
 .comparison { margin-block-start: 1rem; }
+.comparison > summary { padding: .7rem 1rem; color: var(--teal-dark); font-weight: 640; }
+.comparison[open] > summary { border-block-end: 1px solid var(--line); }
 .comparison-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); }
 .comparison-grid > div { padding: .85rem 1.15rem; }
 .comparison-grid > div + div { border-inline-start: 1px solid var(--line); }

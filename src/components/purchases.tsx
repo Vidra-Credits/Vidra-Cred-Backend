@@ -24,8 +24,8 @@ export function Catalog({data,refresh,notify,go}:{data:Data;refresh:Refresh;noti
   if(!client)return <><PageTitle title="Catálogo"/><Empty>No se encontró su cuenta.</Empty></>;
   const approved=client.approval==="APROBADO",line=creditLine(client.credit_limit,data.credits,today());
   const filtered=data.packages.filter(p=>(p.name+" "+p.detail+" "+p.brand).toLowerCase().includes(search.trim().toLowerCase()));
-  return <>
-    <PageTitle title="Catálogo" subtitle={data.stores[0]?.name}>
+  return <div className="catalog-page">
+    <PageTitle title="Catálogo">
       <Field label="Buscar producto"><input type="search" placeholder="Nombre o descripción" value={search} onChange={e=>setSearch(e.target.value)}/></Field>
     </PageTitle>
     <ApprovalStatus client={client}/>
@@ -39,17 +39,17 @@ export function Catalog({data,refresh,notify,go}:{data:Data;refresh:Refresh;noti
     {product&&<RequestModal client={client} product={product} onClose={()=>setProduct(null)} onDone={async()=>{
       setProduct(null);await refresh();notify("Solicitud enviada a la tienda.");go("solicitudes");
     }}/>}
-  </>;
+  </div>;
 }
 
 function QuoteFields({product,mode,months,maxMonths,setMode,setMonths,error}:{product:PackageRow;mode:SaleMode;months:number;maxMonths:number;setMode:(mode:SaleMode)=>void;setMonths:(months:number)=>void;error:ApiError|null}) {
   return <>
-    {product.sale_mode==="AMBOS"?<Field label="Modalidad de pago" hint="Elija entre cuotas mensuales o un pago en la fecha pactada." error={error}>
+    {product.sale_mode==="AMBOS"?<Field label="Modalidad de pago" hint="El pago único vence en la fecha pactada." error={error}>
       <select name="mode" value={mode} onChange={e=>setMode(e.target.value as SaleMode)}>
         <option value="CUOTAS">Cuotas mensuales</option><option value="UNICO">Pago único</option>
       </select>
     </Field>:<p className="muted">{saleModeLabels[product.sale_mode]}</p>}
-    {mode==="CUOTAS"&&<Field label="Plazo" hint={`Una cuota mensual. Su máximo es ${maxMonths} ${maxMonths===1?"mes":"meses"}.`} error={error}>
+    {mode==="CUOTAS"&&<Field label="Plazo" error={error}>
       <select name="months" value={months} onChange={e=>setMonths(Number(e.target.value))}>
         {Array.from({length:maxMonths},(_,i)=>i+1).map(n=><option value={n} key={n}>{n} {n===1?"mes":"meses"}</option>)}
       </select>
@@ -91,7 +91,6 @@ function RequestModal({client,product,onClose,onDone}:{client:ClientRow;product:
           <button className="primary full"><Eye size={17}/> {submission.busy?"Calculando…":"Ver cotización"}</button>
         </fieldset>:<>
           <div aria-live="polite" tabIndex={-1} ref={summary}><QuoteSummary schedule={quote.schedule}/></div>
-          <p className="muted">La tienda revisará la solicitud con estas condiciones.</p>
           <div className="form-actions">
             <button className="secondary" type="button" onClick={()=>change(()=>{})} disabled={submission.busy}>Cambiar condiciones</button>
             <button className="primary" disabled={submission.busy}><Check size={17}/> {submission.busy?"Enviando…":"Enviar solicitud"}</button>
@@ -141,7 +140,7 @@ export function Purchase({data,store,onDone}:{data:Data;store:StoreRow;onDone:(i
   function change(action:()=>void){action();setReview(null);setError(null);}
   function term(n:number){setMonths(n);setGrace("S".repeat(n));setSteps([]);}
   return <>
-    <PageTitle title="Nueva venta" subtitle="Cotice las condiciones del cliente antes de registrar el crédito."/>
+    <PageTitle title="Nueva venta"/>
     {!eligible.length?<section className="card"><Empty>Primero registre o apruebe a un cliente con línea de crédito.</Empty></section>:<div className={quote?"purchase-layout reviewed":"purchase-layout"}>
       <section className="card">
         <div className="card-head"><h2>{quote?"Vista previa de la venta":"Datos de la venta"}</h2></div>
@@ -194,7 +193,7 @@ export function Purchase({data,store,onDone}:{data:Data;store:StoreRow;onDone:(i
           </form>
         </div>
       </section>
-      {client&&<aside className="card purchase-terms">
+      {client&&!quote&&<aside className="card purchase-terms">
         <div className="card-head"><h2>Condiciones del cliente</h2></div>
         <Values items={[
           ["Línea disponible",fmt(line?.available??"0",client.currency)],
@@ -262,17 +261,10 @@ export function Requests({data,refresh,notify,go,selected}:{data:Data;refresh:Re
   const request=data.requests.find(r=>r.id===selected);
   const activeClient=client?data.clients[0]:undefined;
   return <>
-    <PageTitle title={client?"Mis solicitudes":"Solicitudes"} subtitle={client?"Estado de sus compras a crédito":"Cuentas nuevas y compras por revisar"}>
+    <PageTitle title={client?"Mis solicitudes":"Solicitudes"}>
       {client&&<button className="secondary" onClick={()=>go("catalogo")}>Ir al catálogo <ArrowRight size={17}/></button>}
     </PageTitle>
     {activeClient&&<ApprovalStatus client={activeClient}/>}
-    {!client&&<section className="card group">
-      <div className="card-head"><h2>Cuentas en revisión</h2></div>
-      {pendingClients.length?<div className="record-list">{pendingClients.map(c=><article className="record account-record" key={c.id}>
-        <div><strong>{c.name}</strong><small>{c.document} · {c.currency}</small></div><Badge status={c.approval}/>
-        {!data.actor.readOnly&&<button className="text-button" data-account-review={c.id} onClick={()=>go("clientes",c.id)}>Revisar cuenta <ArrowRight size={16}/></button>}
-      </article>)}</div>:<Empty>No hay cuentas nuevas por revisar.</Empty>}
-    </section>}
     <section className="card">
       <div className="card-head"><h2>{client?"Compras solicitadas":"Solicitudes de compra"}</h2><small>{data.requests.length} {data.requests.length===1?"solicitud":"solicitudes"}</small></div>
       {data.requests.length?<div className="record-list">{data.requests.map(r=><article className="record request-record" key={r.id}>
@@ -285,6 +277,13 @@ export function Requests({data,refresh,notify,go,selected}:{data:Data;refresh:Re
         </div>
       </article>)}</div>:<Empty>{client?"Aún no ha enviado solicitudes. Puede empezar en el catálogo.":"No hay solicitudes de compra."}</Empty>}
     </section>
+    {!client&&pendingClients.length>0&&<section className="card request-accounts">
+      <div className="card-head"><h2>Cuentas en revisión</h2></div>
+      <div className="record-list">{pendingClients.map(c=><article className="record account-record" key={c.id}>
+        <div><strong>{c.name}</strong><small>{c.document} · {c.currency}</small></div><Badge status={c.approval}/>
+        {!data.actor.readOnly&&<button className="text-button" data-account-review={c.id} onClick={()=>go("clientes",c.id)}>Revisar cuenta <ArrowRight size={16}/></button>}
+      </article>)}</div>
+    </section>}
     {selected&&!request&&<Notice error={{error:"La solicitud no está disponible en esta cuenta."}}/>}
     {request&&<RequestDetail key={request.id} request={request} client={client} readOnly={!!data.actor.readOnly}
       onClose={()=>go("solicitudes")} refresh={refresh} notify={notify} go={go}/>}

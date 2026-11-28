@@ -32,7 +32,7 @@ test("las vistas con datos PostgreSQL presentan recorridos y valores financieros
       [<Stores data={data} refresh={refresh} notify={notify} openStore={noop}/>,"Pago mensual"],
       [<Catalog data={client} refresh={refresh} notify={notify} go={go}/>,"Solicitar a crédito"],
       [<Requests data={client} refresh={refresh} notify={notify} go={go}/>,"Mis solicitudes"],
-      [<Requests data={data} refresh={refresh} notify={notify} go={go}/>,"Cuentas en revisión"],
+      [<Requests data={data} refresh={refresh} notify={notify} go={go}/>,"Solicitudes de compra"],
       [<Guide role="NEGOCIO" go={go}/>,"Prelación de pagos"],
       [<Simulator/>,"Cronograma editable"]
     ] as const;

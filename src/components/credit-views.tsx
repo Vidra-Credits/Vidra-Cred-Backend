@@ -28,7 +28,8 @@ export function ScheduleView({schedule,rows,currency}:{schedule:Schedule;rows?:S
     <table className="financial-table" role="table" aria-label="Cronograma financiero">
       <caption>Importes en {currency} · año de 360 días</caption>
       <colgroup><col className="sheet-index"/>{headings.map(label=><col key={label} className={
-        label==="Vencimiento"||label==="Fecha de pago"?"statement-date":label==="Estado"?"statement-status":label==="Gracia"?"sheet-short":undefined
+        label==="Vencimiento"||label==="Fecha de pago"?"statement-date":label==="Estado"?"statement-status"
+          :label==="Gracia"?"statement-grace":label.endsWith("%")?"statement-rate":undefined
       }/>)}</colgroup>
       <thead role="rowgroup"><tr role="row"><th scope="col">Cuota</th>
         {headings.map(label=><th key={label} scope="col" role="columnheader">{label}</th>)}
@@ -156,15 +157,19 @@ function CreditDetail({credit:c,data,asOf,go,refresh,notify}:{credit:Credit;data
 export function PaymentView({credit,number,onClose,onDone}:{credit:Credit;number:number;onClose:()=>void;onDone:()=>Promise<void>}) {
   const row=credit.schedule.rows[number-1],currency=credit.currency;
   const minDate=credit.payments.filter(p=>p.installmentNumber<number).reduce((min,p)=>p.paidDate>min?p.paidDate:min,row.dueDate);
+  const maxDate=today();
   const [paidDate,setPaidDate]=useState(today),[error,setError]=useState<ApiError|null>(null),[reference,setReference]=useState("");
   const submission=useSubmission(),key=useReplayKey(),region=useErrorFocus(error,submission.busy);
-  const fee=paidDate?lateFee(row.payment,row.dueDate,paidDate,credit.schedule.input.mora):{days:0,amount:"0.00"};
-  const total=sum([row.payment,fee.amount]),paid=credit.payments.find(p=>p.installmentNumber===row.number);
+  const validDate=/^\d{4}-\d{2}-\d{2}$/.test(paidDate)&&paidDate>=minDate&&paidDate<=maxDate;
+  const fee=validDate?lateFee(row.payment,row.dueDate,paidDate,credit.schedule.input.mora):null;
+  const total=fee?sum([row.payment,fee.amount]):null;
+  const paid=credit.payments.find(p=>p.installmentNumber===row.number);
   return <Modal title={`Registrar pago · cuota ${number}`} onClose={onClose} busy={submission.busy}>
     <div ref={region} className="modal-body">
       <p>{credit.packageName} · Vencimiento {date(row.dueDate)}</p>
       <form className="form-stack" onSubmit={e=>{
         e.preventDefault();
+        if(total===null||!reference.trim())return;
         void submission.run(async()=>{
           const payload={creditId:credit.id,installmentNumber:number,paidDate,total,reference:reference.trim()};
           setError(null);
@@ -174,22 +179,22 @@ export function PaymentView({credit,number,onClose,onDone}:{credit:Credit;number
       }}>
         <Notice error={error}/>
         {paid&&<p role="status" className="banner">Esta cuota figura pagada el {date(paid.paidDate)}. Verifique la referencia {paid.reference||"del cobro"}.</p>}
-        <Field label="Fecha de pago" hint="Desde el vencimiento o el último cobro hasta hoy." error={error}>
-          <input name="paidDate" type="date" required min={minDate} max={today()} value={paidDate} onChange={e=>setPaidDate(e.target.value)}/>
+        <Field label="Fecha de pago" hint={`Entre ${date(minDate)} y ${date(maxDate)}.`} error={error}>
+          <input name="paidDate" type="date" required min={minDate} max={maxDate} value={paidDate} onChange={e=>setPaidDate(e.target.value)}/>
         </Field>
-        <Field label="Referencia del comprobante" hint="Número de recibo, operación o constancia." error={error}>
+        <Field label="Referencia del comprobante" error={error}>
           <input name="reference" required maxLength={120} value={reference} onChange={e=>setReference(e.target.value)}/>
         </Field>
-        <Values items={[
-          ["Cuota pactada",fmt(row.payment,currency)],[`Mora · ${fee.days} días`,fmt(fee.amount,currency)],
+        <div className="quote-overview"><Values items={[
+          ["Cuota pactada",fmt(row.payment,currency)],[fee?`Mora · ${fee.days} días`:"Mora",fee?fmt(fee.amount,currency):"—"],
           ["Interés compensatorio",fmt(row.interest,currency)],["Amortización de capital",fmt(row.principal,currency)]
-        ]}/>
+        ]}/></div>
         <Field label="Importe completo a recibir" hint="Orden de imputación: mora, interés compensatorio y capital." error={error}>
-          <input name="total" className="amount-input" readOnly value={fmt(total,currency)}/>
+          <input name="total" className="amount-input" readOnly value={total===null?"—":fmt(total,currency)}/>
         </Field>
         <div className="form-actions">
           <button className="secondary" type="button" onClick={onClose} disabled={submission.busy}>Volver</button>
-          <button className="primary" disabled={submission.busy||Boolean(paid&&!reference)}>{submission.busy?"Registrando…":"Confirmar pago"}</button>
+          <button className="primary" disabled={submission.busy||total===null||!reference.trim()}>{submission.busy?"Registrando…":"Confirmar pago"}</button>
         </div>
       </form>
     </div>

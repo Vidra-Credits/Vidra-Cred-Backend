@@ -1,5 +1,5 @@
 import type Decimal from "decimal.js";
-import {D, money, sum, simulate, lateFee, addDays, daysBetween, dateOnly, RuleError, periodsPerMonth, periodDays, EXPLORE_LIMITS, MAX_DELAY_DAYS, validateMoratoryRate, type Limits, type CreditInput, type Grace, type ScenarioRow} from './finance';
+import {D, money, sum, simulate, lateFee, addDays, daysBetween, dateOnly, RuleError, periodsPerMonth, periodDays, POLICY_LIMITS, EXPLORE_LIMITS, MAX_DELAY_DAYS, validateMoratoryRate, type Limits, type CreditInput, type Grace, type ScenarioRow} from './finance';
 
 export type Driver = 'opening'|'interest'|'payment'|'principal'|'closing'|'total';
 export type CellEdit = {dueDate?:string; grace?:Grace; tea?:string; teq?:string; paidDate?:string; lateFee?:string; driver?:Driver; value?:string};
@@ -15,6 +15,12 @@ export function sandbox(input:CreditInput, delays:number[], moraTea:string, edit
   const schedule=simulate(input,limits??{...EXPLORE_LIMITS,teaMin:"0"}), mora=new D(moraTea);
   if(!mora.isFinite()||mora.lt(0)||mora.gt(2))throw new RuleError('La tasa moratoria debe estar entre 0 y 200 %.');
   if(limits)validateMoratoryRate(mora,input.tea);
+  if(limits===POLICY_LIMITS&&input.mode!=="UNICO") {
+    const effectiveGrace=schedule.rows.map((row,index)=>edits[index]?.grace??row.grace).join("");
+    if(!/^[TP]*S+$/.test(effectiveGrace)) {
+      throw new RuleError("La gracia va al inicio y debe quedar al menos una cuota que amortice.","grace");
+    }
+  }
   const value=(s:string)=>{if(!/^\d+(\.\d{1,12})?$/.test(s))throw new RuleError('Ingrese un número no negativo con hasta 12 decimales.');return new D(s);};
   let balance=new D(schedule.initialBalance), previousPaid='', previousDue=input.mode==='UNICO'?input.purchaseDate:schedule.baseDate, carriedTea:string|undefined, dirty=false, dateShift=0, ordinary:Decimal|null=null, lastRate:Decimal|null=null;
   const rows:ScenarioRow[]=[],calculations:{annuity:AnnuityTrace|null;edit:CellEdit}[]=[];
@@ -59,7 +65,11 @@ export function sandbox(input:CreditInput, delays:number[], moraTea:string, edit
     let paidDate=edit.paidDate?dateOnly(edit.paidDate):addDays(dueDate,requested);
     if(paidDate<dueDate)throw new RuleError('La fecha de pago simulado debe ser igual o posterior al vencimiento.');
     if(previousPaid&&paidDate<previousPaid)paidDate=previousPaid;
-    const daysLate=daysBetween(dueDate,paidDate), factor=mora.plus(1).pow(new D(daysLate).div(360)).minus(1);
+    const daysLate=daysBetween(dueDate,paidDate);
+    if(grace!=="T"&&daysLate>MAX_DELAY_DAYS) {
+      throw new RuleError(`Cuota ${k+1}: el atraso no puede superar ${MAX_DELAY_DAYS} días.`,"delay");
+    }
+    const factor=mora.plus(1).pow(new D(daysLate).div(360)).minus(1);
     if(grace==='T') {
       if((edit.driver&&edit.driver!=='opening'&&edit.driver!=='interest')||(edit.lateFee!==undefined&&!value(edit.lateFee).eq(0)))throw new RuleError(`Cuota ${k+1}: cambie PG a S para editar el pago o la mora de una fila de gracia total.`);
       capitalized=interest;balance=balance.plus(interest);ordinary=null;

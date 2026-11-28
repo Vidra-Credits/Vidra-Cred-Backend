@@ -29,7 +29,26 @@ test("HTTP: página, sesión local, permisos, validación del servidor y cierre 
   assert.equal((await request("/api/credits",{},clientCookie)).status,403);assert.equal((await request("/api/payments",{},clientCookie)).status,403);
   await request("/api/auth/logout",{},clientCookie);
 });
+test("HTTP: Cliente, Tienda y Sistema pueden iniciar sesión a la vez",async()=>{
+  const roles=[["cliente","CLIENTE"],["tienda","NEGOCIO"],["sistema","SISTEMA"]] as const;
+  const users=await Promise.all([...roles,...roles].map(async ([account,role])=>{
+    const res=await request("/api/auth/login",{
+      email:account+"@vidracred.local",password:process.env.DEMO_PASSWORD??"Vidra2026!"
+    });
+    assert.equal(res.status,200,account);
+    assert.equal((await res.json()).actor.role,role);
+    return res.headers.get("set-cookie")!.split(";")[0];
+  }));
+  await Promise.all(users.map(async cookie=>{
+    assert.equal((await request("/api/auth/logout",{},cookie)).status,200);
+  }));
+});
 test("HTTP: registro público, aislamiento del cliente nuevo y rutas restringidas",async()=>{
+  const config=await (await request("/api/public/config")).json();
+  if(!config.registration) {
+    assert.equal((await request("/api/auth/register",{})).status,403);
+    return;
+  }
   const stores=await request("/api/public/stores");assert.equal(stores.status,200);assert.ok((await stores.json()).stores.length>=1);
   const email=`prueba.${Date.now()}@correo.test`,doc=String(Date.now()).slice(-8);
   const bad=await request("/api/auth/register",{storeId:IDS.store,name:"Prueba HTTP",document:"12",email,password:"clave-segura-1",currency:"PEN"});assert.equal(bad.status,422);
@@ -106,7 +125,7 @@ test("HTTP: foto multipart privada, límite de 1 MB y edición sin reemplazo",as
     assert.equal(res.status,200);return res.headers.get("set-cookie")!.split(";")[0];
   }
   const [shop,client,other]=await Promise.all(["tienda","cliente","aurora"].map(cookie));
-  const product={storeId:IDS.store,name:"Caja con imagen de prueba",detail:"Foto de catálogo",currency:"PEN",amount:"1000",active:true};
+  const product={storeId:IDS.store,name:"Caja con imagen de prueba",detail:"Foto de catálogo",currency:"PEN",amount:"1000",cashPrice:"925.93",active:true};
   const bytes=new Uint8Array(await readFile("public/productos/frascos.webp"));
   function upload(data:Uint8Array<ArrayBuffer>,type:string,key=crypto.randomUUID()){
     const form=new FormData();

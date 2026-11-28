@@ -41,7 +41,7 @@ async function openSession(actor:ReturnType<typeof actorFromRow>,req:NextRequest
     await db.query("DELETE FROM sessions WHERE expires_at<now()");
     await db.query("INSERT INTO sessions(token_hash,user_id,expires_at) VALUES($1,$2,now()+make_interval(hours=>$3))",[hashToken(token),actor.id,hours]);
     if(!actor.readOnly)await audit(db,actor,"INICIAR_SESION",actor.id);
-  });
+  }, "READ COMMITTED");
   const res=NextResponse.json({actor},{status});res.cookies.set("vidra_session",token,{httpOnly:true,sameSite:"strict",secure:req.nextUrl.protocol==="https:",maxAge:hours*3600,path:"/"});return res;
 }
 export const runtime="nodejs";

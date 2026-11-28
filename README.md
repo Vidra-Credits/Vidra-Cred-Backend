@@ -37,9 +37,9 @@ Abra **http://localhost:3001**. Use perfiles de navegador diferentes para Client
 La contraseña inicial de las cuentas ficticias es `Vidra2026!`. Se puede configurar `DEMO_PASSWORD` antes de la primera carga.
 
 1. Cliente. En el catálogo, cotice **Frascos de vidrio de 20 ml** a dos meses y envíe la solicitud.
-2. Tienda. Abra la solicitud, revise la cotización y apruébela. Cliente puede abrir el mismo contrato desde **Mis solicitudes**.
-3. Tienda. En **Créditos**, abra **Envases para cosmética** (`VC-000002`) y registre la cuota vencida. Revise la línea disponible y el Corte mensual.
-4. Sistema. Abra los catálogos de **Vidra Envases Demo** y **Bodega Aurora Demo**. Entre al **Simulador** desde la cabecera. M1 presenta 11 días de desfase, saldo inicial de **S/ 2,011.17** y cuota base de **S/ 691.02**. Expanda la primera cuota, ingrese `800` y pulse Enter.
+2. Tienda. Abra **Solicitudes**, revise el cronograma y apruebe. En la ventana de Cliente, abra **Mis solicitudes → Ver crédito** para mostrar el mismo contrato.
+3. Tienda. En **Créditos**, abra el caso histórico de cosmética (`VC-000002`). Con la última cuota pendiente, use el **15/10/2026** como fecha de pago del ejemplo. La cuota es **S/ 735.34**, la mora de 10 días es **S/ 6.16** y el total es **S/ 741.50**. Muestre el pago recibido y el corte mensual.
+4. Sistema. Abra los catálogos de **Vidra Envases Demo** y **Bodega Aurora Demo**. Entre al **Simulador** desde la cabecera. M1 presenta 11 días de desfase, saldo inicial de **S/ 2,011.17** y cuota base de **S/ 691.02**. Edite **Cuota base** en la primera fila, escriba `800` y pulse Enter. El botón **ƒ** muestra cómo se concilian interés, capital y saldo.
 
 Para una instalación vacía, use `SEED_DEMO=0` y configure `DEMO_PASSWORD` para el primer acceso de Sistema.
 

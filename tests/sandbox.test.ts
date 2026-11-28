@@ -72,5 +72,8 @@ test('la simulación con política valida límites, mora equivalente y tasas edi
   assert.throws(()=>run(input,'0.19'),/mora.*igual o mayor/i);
   assert.throws(()=>run(input,'0.2',{1:{tea:'0.23'}}),/mora.*igual o mayor/i);
   assert.throws(()=>run(input,'0.35',{1:{tea:'0.26'}}),/15 % y 25 %/);
+  assert.throws(()=>run(input,'0.35',{1:{grace:'T'}}),/gracia va al inicio/);
+  assert.throws(()=>run(input,'0.35',{0:{paidDate:'2029-01-01'}}),/no puede superar 720/);
+  assert.equal(run(input,'0.35',{0:{grace:'T'}}).rows[0].payment,'0.00');
   assert.doesNotThrow(()=>run({...input,amount:'5000',months:5,grace:'SSSSSSSSSS'},'0.20'));
 });

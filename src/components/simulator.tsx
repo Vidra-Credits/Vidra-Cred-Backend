@@ -6,7 +6,7 @@ import {D,MAX_DELAY_DAYS,POLICY_LIMITS,EXPLORE_LIMITS,RuleError,periodLabel,peri
 import {M1,M1_DELAYS} from "@/lib/example-cases";
 import {sandbox,type SandboxEdits} from "@/lib/sandbox";
 import {editRow,SandboxTable,type RowField,type RowIssue} from "./sandbox-table";
-import {Brand,csvDownload,date,errorMessage,Field,fmt,Metric,Notice,PageTitle,rate,useErrorFocus,type ApiError} from "./ui";
+import {Brand,csvDownload,date,errorMessage,Field,fmt,Notice,PageTitle,useErrorFocus,type ApiError} from "./ui";
 import {compoundingLabels} from "./workspace-types";
 import {Values} from "./credit-views";
 
@@ -83,7 +83,7 @@ export function Simulator({guest=false}:{guest?:boolean}) {
         next[index]=editRow(next,index,field,value);
       }
       setResult(calculate(settings,delaysFor(baseDelays,nextDelays,length),next));
-      setEdits(next);setDelayEdits(nextDelays);setIssue(null);
+      setEdits(next);setDelayEdits(nextDelays);setIssue(null);setPreset("");
       return true;
     } catch(e) {
       setIssue({index,field,message:errorMessage(e).error});
@@ -106,7 +106,7 @@ export function Simulator({guest=false}:{guest?:boolean}) {
   const annualLabel=settings.rateKind+" (%)";
   const limits=settings.exploring?EXPLORE_LIMITS:POLICY_LIMITS;
   function exportScenario() {
-    csvDownload("vidracred-simulacion.csv",["Cuota","Vencimiento","Gracia","TEA",...(!single?[period]:[]),"Moneda","Saldo inicial","Interés","Cuota base","Capital","Saldo final","Pago simulado","Días de atraso","Mora","Total"],
+    csvDownload("vidracred-simulacion.csv",["Cuota","Vencimiento","Gracia","TEA",...(!single?[period]:[]),"Moneda","Saldo inicial","Interés","Cuota base","Capital","Saldo final","Fecha de pago","Días de atraso","Mora","Cuota total"],
       result.rows.map(r=>[r.number,r.dueDate,r.grace,r.tea??"",...(!single?[r.teq??""]:[]),currency,r.opening,r.interest,r.payment,r.principal,r.closing,r.paidDate??"",r.daysLate,r.lateFee,r.total]));
   }
   return <div className="simulator-shell">
@@ -119,7 +119,8 @@ export function Simulator({guest=false}:{guest?:boolean}) {
         </select></Field>
       </PageTitle>
       <section className="card simulator-card">
-        <div className="card-head"><div><h2>Cronograma editable</h2><p>{single?"Un pago":`${sc.rows.length} cuotas ${sc.input.frequency==="MENSUAL"?"mensuales":"quincenales"}`} · {currency}</p></div>
+        <div className="card-head"><div><h2>Cronograma editable</h2><p>{single?"Pago único":`${sc.rows.length} cuotas ${sc.input.frequency==="MENSUAL"?"mensuales":"quincenales"}`}
+          {" · Compra "}{date(sc.input.purchaseDate)}{" · "}{single?"Vence ":"Base "}{date(single?sc.rows[0].dueDate:sc.baseDate)}</p></div>
           <div className="row-actions">
             <button className="text-button" disabled={!!error} onClick={resetRows}><RotateCcw size={15}/> Restablecer filas</button>
             <button className="secondary" disabled={!!error||!!issue} onClick={exportScenario}><Download size={16}/> CSV</button>
@@ -127,20 +128,14 @@ export function Simulator({guest=false}:{guest?:boolean}) {
         </div>
         <div className="simulator-settings" ref={region}>
           <div className="settings-fields">
-            <Field label="Monto" hint={settings.exploring?"De 100 a 1 000 000.":"De 1 000 a 5 000, múltiplos de 100."} error={error}><input name="amount" type="number" min={limits.amountMin} max={limits.amountMax} step={limits.amountStep} value={settings.amount} onChange={e=>change({...settings,amount:e.target.value})}/></Field>
-            <Field label={annualLabel} hint={settings.exploring?"TEA equivalente de 0 % a 100 %.":"TEA equivalente de 15 % a 25 %."} error={error}><input name="tea" inputMode="decimal" value={settings.annual} onChange={e=>change({...settings,annual:e.target.value})}/></Field>
-            {settings.mode==="CUOTAS"&&<Field label="Plazo" hint={`De 1 a ${limits.maxMonths} meses.`} error={error}><select name="months" value={settings.months} onChange={e=>{
+            <Field label="Monto" hint={settings.exploring?"100–1 000 000":"1 000–5 000 · múltiplos de 100"} error={error}><input name="amount" type="number" min={limits.amountMin} max={limits.amountMax} step={limits.amountStep} value={settings.amount} onChange={e=>change({...settings,amount:e.target.value})}/></Field>
+            <Field label={annualLabel} hint={settings.exploring?"TEA equivalente 0–100 %":"TEA equivalente 15–25 %"} error={error}><input name="tea" inputMode="decimal" value={settings.annual} onChange={e=>change({...settings,annual:e.target.value})}/></Field>
+            {settings.mode==="CUOTAS"&&<Field label="Plazo" error={error}><select name="months" value={settings.months} onChange={e=>{
               const months=Number(e.target.value);change({...settings,months,grace:"S".repeat(months*periodsPerMonth(settings.frequency)),steps:[]},true);
             }}>{Array.from({length:limits.maxMonths},(_,k)=><option key={k} value={k+1}>{k+1} {k===0?"mes":"meses"}</option>)}</select></Field>}
-            <Field label="TEA moratoria (%)" hint="Desde la TEA compensatoria hasta 200 %." error={error}><input name="mora" inputMode="decimal" value={settings.mora} onChange={e=>change({...settings,mora:e.target.value})}/></Field>
+            <Field label="TEA moratoria (%)" hint="Desde la TEA hasta 200 %" error={error}><input name="mora" inputMode="decimal" value={settings.mora} onChange={e=>change({...settings,mora:e.target.value})}/></Field>
           </div>
-          <details className="advanced"><summary>Condiciones avanzadas</summary>
-            <label className="explore-toggle"><input type="checkbox" checked={settings.exploring} onChange={e=>{
-              const exploring=e.target.checked;
-              const months=Math.min(settings.months,(exploring?EXPLORE_LIMITS:POLICY_LIMITS).maxMonths);
-              change({...settings,exploring,months,grace:months===settings.months?settings.grace:"S".repeat(months*periodsPerMonth(settings.frequency)),
-                steps:months===settings.months?settings.steps:[]},true);
-            }}/> Explorar fuera de los límites de crédito</label>
+          <details className="advanced"><summary>Calendario y tasas</summary>
             <div className="form-grid">
               <Field label="Modalidad" hint="Pago único o cronograma en cuotas."><select value={settings.mode} onChange={e=>change({...settings,mode:e.target.value as SaleMode},true)}><option value="CUOTAS">Cuotas</option><option value="UNICO">Pago único</option></select></Field>
               <Field label="Fecha de compra" hint="Fecha desde la que se cuentan los días de desfase." error={error}><input name="purchaseDate" type="date" value={settings.purchaseDate} onChange={e=>change({...settings,purchaseDate:e.target.value})}/></Field>
@@ -151,34 +146,27 @@ export function Simulator({guest=false}:{guest?:boolean}) {
               {settings.rateKind==="TNA"&&<Field label="Capitalización" hint="Número de períodos de capitalización al año." error={error}><select name="compounding" value={settings.compounding} onChange={e=>change({...settings,compounding:e.target.value as Compounding})}>
                 {Object.entries(compoundingLabels).map(([k,label])=><option key={k} value={k}>{label}</option>)}
               </select></Field>}
-              {settings.mode==="CUOTAS"&&<>
-                <Field label="Frecuencia" hint="Quincenal para contratos históricos."><select value={settings.frequency} onChange={e=>{
+              {settings.mode==="CUOTAS"&&
+                <Field label="Frecuencia" hint="Quincenal para casos históricos."><select value={settings.frequency} onChange={e=>{
                   const frequency=e.target.value as Frequency;
                   change({...settings,frequency,grace:"S".repeat(settings.months*periodsPerMonth(frequency)),steps:[]},true);
-                }}><option value="MENSUAL">Mensual</option><option value="QUINCENAL">Quincenal</option></select></Field>
-                <Field label="Gracia por cuota" hint="T = total, P = parcial, S = sin gracia. Termine con S." error={error}><input name="grace" value={settings.grace} maxLength={length} onChange={e=>change({...settings,grace:e.target.value.toUpperCase()})}/></Field>
-                <Field label="Cambio de TEA desde la cuota 2 (%)" hint="Opcional. Los demás cambios se editan en la fila." error={error}><input name="rateSteps" type="number" min={0} max={100} step="any" disabled={length<2}
-                  value={settings.steps[0]?new D(settings.steps[0].tea).mul(100).toString():""} onChange={e=>{
-                    const value=e.target.value;change({...settings,steps:value?[{from:2,tea:new D(value).div(100).toFixed(12)}]:[]});
-                  }}/></Field>
-              </>}
+                }}><option value="MENSUAL">Mensual</option><option value="QUINCENAL">Quincenal</option></select></Field>}
             </div>
+            <label className="explore-toggle"><input type="checkbox" checked={settings.exploring} onChange={e=>{
+              const exploring=e.target.checked;
+              const months=Math.min(settings.months,(exploring?EXPLORE_LIMITS:POLICY_LIMITS).maxMonths);
+              change({...settings,exploring,months,grace:months===settings.months?settings.grace:"S".repeat(months*periodsPerMonth(settings.frequency)),
+                steps:months===settings.months?settings.steps:[]},true);
+            }}/> Explorar fuera de los límites de crédito</label>
           </details>
           <Notice error={error}/>
           {(error||issue)&&<p role="status" className="reference-status">Se muestra el último resultado válido.</p>}
         </div>
-        <SandboxTable result={result} edits={edits} adjustedDelays={delayEdits} issue={issue}
-          onCommit={commit} onDiscard={()=>setIssue(null)} onReset={resetRow} locked={!!error} revision={revision}/>
-        <Values items={[
-          ["Interés total",fmt(result.totals.interest,currency)],["Mora simulada",fmt(result.totals.lateFee,currency)],
-          ["Total de pagos simulados",fmt(result.totals.totalPaid,currency)],["Saldo final",fmt(result.rows.at(-1)!.closing,currency)]
-        ]}/>
+        <SandboxTable key={revision} result={result} edits={edits} adjustedDelays={delayEdits} issue={issue}
+          onCommit={commit} onDiscard={()=>setIssue(null)} onReset={resetRow} locked={!!error}/>
+        {single&&<p className="sheet-key">{sc.initialDays} días de interés desde la compra hasta el vencimiento.</p>}
+        {new D(sc.rows.at(-1)!.closing).gt(0)&&<p className="sheet-key reference-status">Saldo pendiente tras la última cuota por ajustes del escenario.</p>}
       </section>
-      <div className="metrics simulator-metrics" aria-label="Resumen del escenario">
-        <Metric label={single?"Días de interés":"Desfase inicial"} value={`${sc.initialDays} días`} note={`Compra ${date(sc.input.purchaseDate)} · Pago ${date(sc.baseDate)}`} accent/>
-        <Metric label="Saldo inicial" value={fmt(sc.initialBalance,currency)} note={single?"Capital de la compra":`Interés del desfase ${fmt(sc.initialInterest,currency)}`}/>
-        <Metric label={single?"Pago único pactado":"Cuota base"} value={fmt(sc.ordinaryPayment,currency)} note={single?`Interés por días ${fmt(sc.rows[0].interest,currency)}`:`${period} ${rate(sc.teq)}`}/>
-      </div>
       {!single&&sc.rows.length>1&&<GraceComparison input={sc.input} mora={result.moraTea} delays={delays} edits={edits}/>}
     </main>
   </div>;
@@ -193,8 +181,9 @@ function GraceComparison({input,mora,delays,edits}:{input:CreditInput;mora:strin
     const variants=[["Sin gracia","S"],["Gracia total","T"],["Gracia parcial","P"]].map(([label,first])=>({
       label,grace:first+tail,result:sandbox({...input,grace:first+tail},delays,mora,comparable)
     }));
-    return <section className="card comparison">
-      <div className="card-head"><div><h2>Comparación de gracia</h2><p>Mismo monto, tasa, calendario y atrasos. Se cambia la gracia de la primera cuota.</p></div></div>
+    return <details className="card comparison">
+      <summary>Comparación de gracia</summary>
+      <p className="sheet-key">Se compara la primera cuota con el mismo monto, tasa, calendario y atrasos.</p>
       <div className="comparison-grid">
         {variants.map(({label,grace,result})=><div key={label}><h3>{label} <small>{grace}</small></h3>
           <Values items={[
@@ -203,7 +192,7 @@ function GraceComparison({input,mora,delays,edits}:{input:CreditInput;mora:strin
           ]}/>
         </div>)}
       </div>
-    </section>;
+    </details>;
   } catch {
     return <Notice error={{error:"Revise las fechas ajustadas para comparar las opciones de gracia."}}/>;
   }

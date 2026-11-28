@@ -101,6 +101,19 @@ export default function Workspace() {
     return()=>clearTimeout(timeout);
   },[toast]);
   const screen=data?safeView(data,route):undefined;
+  const liveView=(screen==="solicitudes"&&!route.id)||screen==="portal"
+    ||(screen==="cronograma"&&data?.actor.role==="CLIENTE");
+  useEffect(()=>{
+    if(!liveView)return;
+    function refreshVisibleView() {
+      if(document.visibilityState==="visible"&&navigator.onLine&&!document.querySelector("dialog[open]")) {
+        void refresh();
+      }
+    }
+    refreshVisibleView();
+    const id=window.setInterval(refreshVisibleView,8000);
+    return ()=>window.clearInterval(id);
+  },[liveView,screen,refresh]);
   useEffect(()=>{
     if(screen==="simulador"){window.location.replace("/simulador");return;}
     if(!data)return;

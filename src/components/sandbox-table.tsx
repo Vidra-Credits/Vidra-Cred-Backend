@@ -18,32 +18,34 @@ function Cell({label,value,onCommit,issue,onDiscard,type="text",locked=false}:{
   label:string;value:string;onCommit:(v:string)=>boolean;issue?:string;onDiscard:()=>void;type?:string;locked?:boolean;
 }) {
   const id=useId(),[draft,setDraft]=useState<string|null>(null);
+  function applyDraft(discardOnError=false) {
+    if(locked||draft===null)return;
+    if(draft===value||onCommit(draft.trim().replace(",","."))||discardOnError)setDraft(null);
+  }
   return <div className="field cell">
     <label htmlFor={id}>{label}</label>
     <input id={id} type={type} inputMode={type==="text"?"decimal":undefined} className="mono" readOnly={locked}
       value={draft??value}
       aria-invalid={issue?true:undefined}
       onChange={e=>setDraft(e.target.value)}
+      onBlur={()=>applyDraft(true)}
       onKeyDown={e=>{
         if(e.key==="Escape"){e.preventDefault();e.stopPropagation();setDraft(null);onDiscard();}
-        if(e.key==="Enter"||e.key==="Tab"){
-          if(e.key==="Enter")e.preventDefault();
-          if(!locked&&draft!==null&&(draft===value||onCommit(draft.trim().replace(",","."))))setDraft(null);
-        }
+        if(e.key==="Enter"){e.preventDefault();applyDraft();}
       }}/>
   </div>;
 }
 
-export function SandboxTable({result,edits,adjustedDelays,issue,onCommit,onDiscard,onReset,locked,revision}:{
+export function SandboxTable({result,edits,adjustedDelays,issue,onCommit,onDiscard,onReset,locked}:{
   result:Result;edits:SandboxEdits;issue:RowIssue|null;onCommit:(i:number,field:RowField,value:string)=>boolean;
-  adjustedDelays:Record<number,number>;onDiscard:()=>void;onReset:(i:number)=>void;locked:boolean;revision:number;
+  adjustedDelays:Record<number,number>;onDiscard:()=>void;onReset:(i:number)=>void;locked:boolean;
 }) {
   const {schedule}=result,{currency}=schedule.input,period=periodLabel(schedule.input.frequency);
   const single=schedule.input.mode==="UNICO";
   const [resets,setResets]=useState<Record<number,number>>({});
   const [openRow,setOpenRow]=useState<number|null>(null);
   const headings=["Vencimiento",...(!single?["Gracia"]:[]),"TEA %",...(!single?[period+" %"]:[]),
-    "Saldo inicial","Interés","Cuota base","Capital","Saldo final","Pago simulado","Días de atraso","Mora","Cuota total"];
+    "Saldo inicial","Interés","Cuota base","Capital","Saldo final","Fecha de pago","Días de atraso","Mora","Cuota total"];
   const displayRate=(value:string)=>rate(value).replace(" %","");
   const td=(label:string,content:React.ReactNode)=><td key={label} role="cell" data-label={label}>{content}</td>;
   function totals(values:string[]) {
@@ -51,9 +53,9 @@ export function SandboxTable({result,edits,adjustedDelays,issue,onCommit,onDisca
   }
   return <div className="schedule-sheet schedule-editable">
     <table className="financial-table" role="table" aria-label="Cronograma editable">
-      <caption>Importes en {currency} · Enter o Tab aplica · Escape descarta</caption>
+      <caption>Simulación · {currency} · Enter o Tab aplica · Escape descarta</caption>
       <colgroup><col className="sheet-index"/>{headings.map(label=><col key={label} className={
-        label==="Vencimiento"||label==="Pago simulado"?"sheet-date":label==="Gracia"||label==="Días de atraso"?"sheet-short":undefined
+        label==="Vencimiento"||label==="Fecha de pago"?"sheet-date":label==="Gracia"||label==="Días de atraso"?"sheet-short":undefined
       }/>)}</colgroup>
       <thead role="rowgroup"><tr role="row"><th scope="col">Cuota</th>
         {headings.map(label=><th key={label} scope="col" role="columnheader">{label}</th>)}
@@ -73,7 +75,7 @@ export function SandboxTable({result,edits,adjustedDelays,issue,onCommit,onDisca
           const disabledFields=r.grace==="T";
           const show=openRow===r.number;
           return <Fragment key={r.number}>
-            <tr className={edited?"sheet-edited":undefined} key={revision+"-"+(resets[i]??0)} role="row">
+            <tr className={edited?"sheet-edited":undefined} key={resets[i]??0} role="row">
               <th scope="row" role="rowheader">
                 <button type="button" className="sheet-row-button" aria-label={`Fórmulas de la cuota ${r.number}`}
                   aria-expanded={show} onClick={()=>setOpenRow(show?null:r.number)}><span className="sheet-row-prefix">Cuota </span>{r.number}<span aria-hidden="true"> ƒ</span></button>
@@ -90,7 +92,7 @@ export function SandboxTable({result,edits,adjustedDelays,issue,onCommit,onDisca
               {disabledFields?td("Cuota base",num(r.payment)):cell("payment","Cuota base",r.payment)}
               {disabledFields?td("Capital",num(r.principal)):cell("principal","Capital",r.principal)}
               {disabledFields?td("Saldo final",num(r.closing)):cell("closing","Saldo final",r.closing)}
-              {disabledFields?td("Pago simulado","—"):cell("paidDate","Pago simulado",r.paidDate??"","date")}
+              {disabledFields?td("Fecha de pago","—"):cell("paidDate","Fecha de pago",r.paidDate??"","date")}
               {disabledFields?td("Días de atraso","—"):cell("delay","Días de atraso",String(r.daysLate))}
               {disabledFields?td("Mora",num(r.lateFee)):cell("lateFee","Mora",r.lateFee)}
               {disabledFields?td("Cuota total",num(r.total)):cell("total","Cuota total",r.total)}

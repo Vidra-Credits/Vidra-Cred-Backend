@@ -1,10 +1,10 @@
 "use client";
 
-import {useId,useState} from "react";
-import {ChevronDown,RotateCcw} from "lucide-react";
-import {D,daysBetween,periodDays,periodLabel} from "@/lib/finance";
+import {Fragment,useId,useState} from "react";
+import {RotateCcw} from "lucide-react";
+import {D,daysBetween,periodDays,periodLabel,sum} from "@/lib/finance";
 import {type sandbox,type CellEdit,type Driver,type SandboxEdits} from "@/lib/sandbox";
-import {Badge,date,fmt,rate} from "./ui";
+import {date,num,rate} from "./ui";
 
 export type RowField=Driver|"dueDate"|"grace"|"tea"|"teq"|"paidDate"|"lateFee"|"delay";
 export type RowIssue={index:number;field:RowField;message:string};
@@ -22,63 +22,98 @@ function Cell({label,value,onCommit,issue,onDiscard,type="text",locked=false}:{
     <label htmlFor={id}>{label}</label>
     <input id={id} type={type} inputMode={type==="text"?"decimal":undefined} className="mono" readOnly={locked}
       value={draft??value}
-      aria-invalid={issue?true:undefined} aria-describedby={issue?id+"-error":undefined}
+      aria-invalid={issue?true:undefined}
       onChange={e=>setDraft(e.target.value)}
       onKeyDown={e=>{
         if(e.key==="Escape"){e.preventDefault();e.stopPropagation();setDraft(null);onDiscard();}
-        if(e.key==="Enter"){e.preventDefault();if(!locked&&draft!==null&&onCommit(draft.trim().replace(",",".")))setDraft(null);}
+        if(e.key==="Enter"||e.key==="Tab"){
+          if(e.key==="Enter")e.preventDefault();
+          if(!locked&&draft!==null&&(draft===value||onCommit(draft.trim().replace(",","."))))setDraft(null);
+        }
       }}/>
-    {issue&&<span id={id+"-error"} className="field-error" role="alert">{issue}</span>}
   </div>;
 }
 
-export function SandboxTable({result,edits,delays,adjustedDelays,issue,onCommit,onDiscard,onReset,locked,revision}:{
-  result:Result;edits:SandboxEdits;delays:number[];issue:RowIssue|null;onCommit:(i:number,field:RowField,value:string)=>boolean;
+export function SandboxTable({result,edits,adjustedDelays,issue,onCommit,onDiscard,onReset,locked,revision}:{
+  result:Result;edits:SandboxEdits;issue:RowIssue|null;onCommit:(i:number,field:RowField,value:string)=>boolean;
   adjustedDelays:Record<number,number>;onDiscard:()=>void;onReset:(i:number)=>void;locked:boolean;revision:number;
 }) {
-  const currency=result.schedule.input.currency,period=periodLabel(result.schedule.input.frequency),single=result.schedule.input.mode==="UNICO";
+  const {schedule}=result,{currency}=schedule.input,period=periodLabel(schedule.input.frequency);
+  const single=schedule.input.mode==="UNICO";
   const [resets,setResets]=useState<Record<number,number>>({});
-  return <div className="installments sandbox-table">
-    <div className="installment-head"><span>Cuota</span><span>Vencimiento</span><span>Estado</span><span className="right">Cuota base</span><span/></div>
-    {result.rows.map((r,i)=>{
-      const edited=Boolean(edits[i]&&Object.keys(edits[i]).length)||Boolean(result.calculations[i].edit.driver)||Object.hasOwn(adjustedDelays,i);
-      const status=edited?"AJUSTADA":r.grace==="T"?"GRACIA_TOTAL":"SIMULADA";
-      const cell=(field:RowField,label:string,value:string,type?:string)=><Cell key={field} label={label+" · cuota "+r.number}
-        value={value} issue={issue?.index===i&&issue.field===field?issue.message:undefined} type={type} locked={locked}
-        onCommit={v=>onCommit(i,field,v)} onDiscard={()=>{if(issue?.index===i&&issue.field===field)onDiscard();}}/>;
-      return <details key={r.number} className={"installment"+(edited?" edited":"")}>
-        <summary aria-label={`Cuota ${r.number}, ${date(r.dueDate)}, ${fmt(r.payment,currency)}. Ajustar y ver fórmulas`}>
-          <strong>Cuota {r.number}</strong><time dateTime={r.dueDate}>{date(r.dueDate)}</time>
-          <Badge status={status}/><b className="right">{fmt(r.payment,currency)}</b><ChevronDown size={17}/>
-        </summary>
-        <div className="row-editor">
-          <div className="split">
-            <p>Enter aplica el valor. Escape descarta la edición.</p>
-            <button type="button" className="secondary" disabled={locked} onClick={()=>{
-              onReset(i);setResets(old=>({...old,[i]:(old[i]??0)+1}));
-            }}><RotateCcw size={15}/> Restablecer fila {r.number}</button>
-          </div>
-          <div className="editor-fields" key={revision+"-"+(resets[i]??0)}>
-            {cell("dueDate","Vencimiento",r.dueDate,"date")}
-            {!single&&<label className="plain-field">Gracia · cuota {r.number}<select value={r.grace} disabled={locked}
-              aria-invalid={issue?.index===i&&issue.field==="grace"||undefined}
-              onChange={e=>onCommit(i,"grace",e.target.value)}>
-              <option value="S">Sin gracia</option><option value="T">Total</option><option value="P">Parcial</option>
-            </select>{issue?.index===i&&issue.field==="grace"&&<span className="field-error" role="alert">{issue.message}</span>}</label>}
-            {cell("tea","TEA (%)",new D(r.tea!).mul(100).toFixed(7))}
-            {!single&&cell("teq",period+" (%)",new D(r.teq!).mul(100).toFixed(7))}
-            {(Object.entries(driverNames) as [Driver,string][]).map(([field,label])=>
-              (r.grace!=="T"||field==="opening"||field==="interest")?cell(field,label,r[field]):null)}
-            {r.grace!=="T"&&<>
-              {cell("delay","Días de atraso",String(delays[i]??0))}
-              {cell("paidDate","Fecha de pago simulado",r.paidDate??"","date")}
-              {cell("lateFee","Mora",r.lateFee)}
-            </>}
-          </div>
-          <RowFormulas result={result} index={i}/>
-        </div>
-      </details>;
-    })}
+  const [openRow,setOpenRow]=useState<number|null>(null);
+  const headings=["Vencimiento",...(!single?["Gracia"]:[]),"TEA %",...(!single?[period+" %"]:[]),
+    "Saldo inicial","Interés","Cuota base","Capital","Saldo final","Pago simulado","Días de atraso","Mora","Cuota total"];
+  const displayRate=(value:string)=>rate(value).replace(" %","");
+  const td=(label:string,content:React.ReactNode)=><td key={label} role="cell" data-label={label}>{content}</td>;
+  function totals(values:string[]) {
+    return values.map((value,i)=>td(headings[i],value));
+  }
+  return <div className="schedule-sheet schedule-editable">
+    <table className="financial-table" role="table" aria-label="Cronograma editable">
+      <caption>Importes en {currency} · Enter o Tab aplica · Escape descarta</caption>
+      <colgroup><col className="sheet-index"/>{headings.map(label=><col key={label} className={
+        label==="Vencimiento"||label==="Pago simulado"?"sheet-date":label==="Gracia"||label==="Días de atraso"?"sheet-short":undefined
+      }/>)}</colgroup>
+      <thead role="rowgroup"><tr role="row"><th scope="col">Cuota</th>
+        {headings.map(label=><th key={label} scope="col" role="columnheader">{label}</th>)}
+      </tr></thead>
+      <tbody role="rowgroup">
+        {!single&&<tr className="financial-base" role="row">
+          <th scope="row" role="rowheader">0 <small>{schedule.initialDays} días</small></th>
+          {totals([date(schedule.baseDate),"—",displayRate(schedule.input.tea),displayRate(schedule.teq),
+            num(schedule.input.amount),num(schedule.initialInterest),"—","—",num(schedule.initialBalance),"—","—","—","—"])}
+        </tr>}
+        {result.rows.map((r,i)=>{
+          const edited=Boolean(edits[i]&&Object.keys(edits[i]).length)||Boolean(result.calculations[i].edit.driver)||Object.hasOwn(adjustedDelays,i);
+          const issueAt=(field:RowField)=>issue?.index===i&&issue.field===field?issue.message:undefined;
+          const cell=(field:RowField,label:string,value:string,type?:string)=>td(label,<Cell label={label+" · cuota "+r.number}
+            value={value} issue={issueAt(field)} type={type} locked={locked}
+            onCommit={v=>onCommit(i,field,v)} onDiscard={()=>{if(issueAt(field))onDiscard();}}/>);
+          const disabledFields=r.grace==="T";
+          const show=openRow===r.number;
+          return <Fragment key={r.number}>
+            <tr className={edited?"sheet-edited":undefined} key={revision+"-"+(resets[i]??0)} role="row">
+              <th scope="row" role="rowheader">
+                <button type="button" className="sheet-row-button" aria-label={`Fórmulas de la cuota ${r.number}`}
+                  aria-expanded={show} onClick={()=>setOpenRow(show?null:r.number)}><span className="sheet-row-prefix">Cuota </span>{r.number}<span aria-hidden="true"> ƒ</span></button>
+              </th>
+              {cell("dueDate","Vencimiento",r.dueDate,"date")}
+              {!single&&td("Gracia",<select value={r.grace} disabled={locked} aria-label={`Gracia · cuota ${r.number}`}
+                aria-invalid={!!issueAt("grace")} onChange={e=>onCommit(i,"grace",e.target.value)}>
+                <option value="S" title="Sin gracia">S</option><option value="T" title="Gracia total">T</option><option value="P" title="Gracia parcial">P</option>
+              </select>)}
+              {cell("tea","TEA %",displayRate(r.tea!))}
+              {!single&&cell("teq",period+" %",displayRate(r.teq!))}
+              {cell("opening","Saldo inicial",r.opening)}
+              {cell("interest","Interés",r.interest)}
+              {disabledFields?td("Cuota base",num(r.payment)):cell("payment","Cuota base",r.payment)}
+              {disabledFields?td("Capital",num(r.principal)):cell("principal","Capital",r.principal)}
+              {disabledFields?td("Saldo final",num(r.closing)):cell("closing","Saldo final",r.closing)}
+              {disabledFields?td("Pago simulado","—"):cell("paidDate","Pago simulado",r.paidDate??"","date")}
+              {disabledFields?td("Días de atraso","—"):cell("delay","Días de atraso",String(r.daysLate))}
+              {disabledFields?td("Mora",num(r.lateFee)):cell("lateFee","Mora",r.lateFee)}
+              {disabledFields?td("Cuota total",num(r.total)):cell("total","Cuota total",r.total)}
+            </tr>
+            {(show||issue?.index===i)&&<tr className="sheet-detail" role="row"><td colSpan={headings.length+1} role="cell">
+              {issue?.index===i&&<p role="alert" className="field-error">Cuota {r.number}: {issue.message}</p>}
+              {show&&<div className="row-editor">
+                <button type="button" className="secondary" disabled={locked} onClick={()=>{
+                  onReset(i);setResets(old=>({...old,[i]:(old[i]??0)+1}));
+                }}><RotateCcw size={15}/> Restablecer fila {r.number}</button>
+                <RowFormulas result={result} index={i}/>
+              </div>}
+            </td></tr>}
+          </Fragment>;
+        })}
+      </tbody>
+      <tfoot role="rowgroup"><tr role="row"><th scope="row" role="rowheader">Totales</th>
+        {totals(["—",...(!single?["—"]:[]),"—",...(!single?["—"]:[]),"—",
+          num(result.totals.interest),num(result.totals.installments),num(sum(result.rows.map(r=>r.principal))),
+          num(result.rows.at(-1)!.closing),"—","—",num(result.totals.lateFee),num(result.totals.totalPaid)])}
+      </tr></tfoot>
+    </table>
+    <p className="sheet-key">Gracia: S amortiza · P solo paga interés · T capitaliza. El interés total incluye el desfase. ƒ muestra las fórmulas.</p>
   </div>;
 }
 

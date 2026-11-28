@@ -1,7 +1,7 @@
 "use client";
 
 import {Fragment,useState,type ReactNode} from "react";
-import {ArrowLeft,ArrowRight,ChevronDown,Download,Plus,ReceiptText} from "lucide-react";
+import {ArrowLeft,ArrowRight,Download,Plus,ReceiptText} from "lucide-react";
 import {POLICY,creditLine,cutListing,lateFee,monthDate,periodLabel,statement,sum,today,type Credit,type Currency,type Schedule} from "@/lib/finance";
 import {api,Badge,csvDownload,date,Empty,errorMessage,Field,fmt,Metric,Modal,Notice,num,PageTitle,rate,shortId,statusLabels,useErrorFocus,useReplayKey,useSubmission,type ApiError} from "./ui";
 import type {Data,Go,StoreRow} from "./workspace-types";
@@ -16,64 +16,63 @@ export function Values({items}:{items:[string,ReactNode][]}) {
 
 export function ScheduleView({schedule,rows,currency}:{schedule:Schedule;rows?:StatementRow[];currency:Currency}) {
   const single=schedule.input.mode==="UNICO",period=periodLabel(schedule.input.frequency);
-  return <>
-    <div className="installments" aria-label="Cuotas">
-      <div className="installment-head"><span>Cuota</span><span>Vencimiento</span><span>Estado</span><span className="right">Cuota pactada</span><span/></div>
-      {schedule.rows.map((item,i)=>{
-        const row=rows?.[i],status=row?.status??(item.grace==="T"?"GRACIA_TOTAL":"PACTADA");
-        return <details className="installment" key={item.number}>
-          <summary aria-label={`Cuota ${item.number}, ${date(item.dueDate)}, ${statusLabels[status]}, ${fmt(item.payment,currency)}`}>
-            <strong>Cuota {item.number}</strong><time dateTime={item.dueDate}>{date(item.dueDate)}</time>
-            <Badge status={status}/><b className="right">{fmt(item.payment,currency)}</b><ChevronDown size={17}/>
-          </summary>
-          <Values items={[
-            ["Saldo inicial",fmt(item.opening,currency)],["Interés",fmt(item.interest,currency)],
-            ["Capital",fmt(item.principal,currency)],["Saldo final",fmt(item.closing,currency)],
-            ["TEA",rate(item.tea??schedule.input.tea)],
-            ...(single?[]:[[period,rate(item.teq??schedule.teq)] as [string,string]]),
-            ...(row?[
-              [row.paidDate?"Mora cobrada":"Mora a la fecha",fmt(row.lateFee,currency)],
-              ["Días de atraso",row.daysLate],["Pago recibido",fmt(row.totalPaid,currency)],
-              ["Fecha de pago",date(row.paidDate)],["Por cobrar",fmt(row.pending,currency)]
-            ] as [string,ReactNode][]:[])
-          ]}/>
-        </details>;
-      })}
-    </div>
-    <details className="full-schedule">
-      <summary>Ver tabla financiera completa</summary>
-      <div className="financial-scroll" tabIndex={0} role="region" aria-label="Tabla financiera completa">
-        <table className="financial-table">
-          <caption>Importes en {currency} · base de 360 días</caption>
-          <thead><tr>{["Cuota","Vencimiento","Gracia","TEA",...(!single?[period]:[]),"Saldo inicial","Interés","Cuota pactada","Capital","Saldo final",...(rows?["Estado","Fecha de pago","Días de atraso","Mora","Pago recibido"]:[])].map(label=><th key={label} scope="col">{label}</th>)}</tr></thead>
-          <tbody>
-            {!single&&<tr className="financial-base"><th scope="row">Desfase inicial</th><td>{date(schedule.baseDate)}</td><td>—</td><td>{rate(schedule.input.tea)}</td><td>{rate(schedule.teq)}</td><td>{num(schedule.input.amount)}</td><td>{num(schedule.initialInterest)}</td><td>—</td><td>—</td><td>{num(schedule.initialBalance)}</td>{rows&&<td colSpan={5}>Capitalización del desfase</td>}</tr>}
-            {schedule.rows.map((item,i)=>{
-              const row=rows?.[i];
-              return <tr key={item.number}><th scope="row">{item.number}</th><td>{date(item.dueDate)}</td><td>{item.grace}</td>
-                <td>{rate(item.tea??schedule.input.tea)}</td>{!single&&<td>{rate(item.teq??schedule.teq)}</td>}
-                {[item.opening,item.interest,item.payment,item.principal,item.closing].map((v,k)=><td className="right" key={k}>{num(v)}</td>)}
-                {row&&<><td><Badge status={row.status}/></td><td>{date(row.paidDate)}</td><td className="right">{row.daysLate}</td><td className="right">{num(row.lateFee)}</td><td className="right">{num(row.totalPaid)}</td></>}
-              </tr>;
-            })}
-          </tbody>
-        </table>
-      </div>
-    </details>
-  </>;
+  const headings=["Vencimiento","Gracia","TEA %",...(!single?[period+" %"]:[]),
+    "Saldo inicial","Interés","Cuota pactada","Capital","Saldo final",
+    ...(rows?["Estado","Fecha de pago","Días de atraso","Mora","Pago recibido","Por cobrar"]:[])];
+  const amount=(v:string)=>num(v);
+  const percent=(v:string)=>rate(v).replace(" %","");
+  function cells(values:ReactNode[]) {
+    return values.map((value,index)=><td key={headings[index]} role="cell" data-label={headings[index]}>{value}</td>);
+  }
+  return <div className="schedule-sheet">
+    <table className="financial-table" role="table" aria-label="Cronograma financiero">
+      <caption>Importes en {currency} · año de 360 días</caption>
+      <colgroup><col className="sheet-index"/>{headings.map(label=><col key={label} className={
+        label==="Vencimiento"||label==="Fecha de pago"?"statement-date":label==="Estado"?"statement-status":label==="Gracia"?"sheet-short":undefined
+      }/>)}</colgroup>
+      <thead role="rowgroup"><tr role="row"><th scope="col">Cuota</th>
+        {headings.map(label=><th key={label} scope="col" role="columnheader">{label}</th>)}
+      </tr></thead>
+      <tbody role="rowgroup">
+        {!single&&<tr className="financial-base" role="row">
+          <th scope="row" role="rowheader">0 <small>Desfase</small></th>
+          {cells([date(schedule.baseDate),"—",percent(schedule.input.tea),percent(schedule.teq),
+            amount(schedule.input.amount),amount(schedule.initialInterest),"—","—",amount(schedule.initialBalance),
+            ...(rows?["—","—","—","—","—","—"]:[])])}
+        </tr>}
+        {schedule.rows.map((item,i)=>{
+          const row=rows?.[i];
+          return <tr key={item.number} role="row">
+            <th scope="row" role="rowheader"><span className="sheet-row-prefix">Cuota </span>{item.number}</th>
+            {cells([date(item.dueDate),item.grace,percent(item.tea??schedule.input.tea),...(!single?[percent(item.teq??schedule.teq)]:[]),
+              ...[item.opening,item.interest,item.payment,item.principal,item.closing].map(amount),
+              ...(rows?[row&&<Badge status={row.status}/>,date(row?.paidDate),row?.daysLate??"—",
+                row?amount(row.lateFee):"—",row?amount(row.totalPaid):"—",row?amount(row.pending):"—"]:[])])}
+          </tr>;
+        })}
+      </tbody>
+      <tfoot role="rowgroup"><tr role="row">
+        <th scope="row" role="rowheader">Totales</th>
+        {cells(["—","—","—",...(!single?["—"]:[]),"—",amount(schedule.totals.interest),amount(schedule.totals.payments),
+          amount(schedule.totals.principal),amount(schedule.rows.at(-1)!.closing),
+          ...(rows?["—","—","—",amount(sum(rows.map(row=>row.lateFee))),amount(sum(rows.map(row=>row.totalPaid))),amount(sum(rows.map(row=>row.pending)))]:[])])}
+      </tr></tfoot>
+    </table>
+    <p className="sheet-key">Gracia: S amortiza · P solo paga interés · T capitaliza. El interés total incluye el desfase inicial.</p>
+  </div>;
 }
 
 export function QuoteSummary({schedule}:{schedule:Schedule}) {
   const {currency,mode,tea,mora}=schedule.input,single=mode==="UNICO";
-  return <>
+  return <div className="quote-overview">
     <Values items={[
       [single?"Vencimiento":"Primera cuota",date(schedule.rows[0].dueDate)],
       ...(!single?[["Cuota base",fmt(schedule.ordinaryPayment,currency)] as [string,string]]:[]),
       ["Interés total",fmt(schedule.totals.interest,currency)],["Total a pagar",<strong>{fmt(schedule.totals.payments,currency)}</strong>],
       ["TEA",rate(tea)],["TEA moratoria",rate(mora??POLICY.mora)]
     ]}/>
-    <details className="quote-schedule"><summary>Ver fechas y cuotas</summary><ScheduleView schedule={schedule} currency={currency}/></details>
-  </>;
+    <ScheduleView schedule={schedule} currency={currency}/>
+  </div>;
 }
 
 function CreditList({credits,asOf,go}:{credits:Credit[];asOf:string;go:Go}) {
@@ -119,8 +118,8 @@ function CreditDetail({credit:c,data,asOf,go,refresh,notify}:{credit:Credit;data
   const label=next?.status==="VENCIDA"?"Primera cuota vencida":"Próximo vencimiento";
   function exportCredit() {
     csvDownload(shortId(c.id)+".csv",
-      ["Cuota","Vencimiento","Estado","Moneda","Gracia","TEA",periodLabel(sc.input.frequency),"Saldo inicial","Interés","Cuota pactada","Capital","Saldo final","Mora","Pago recibido","Fecha de pago"],
-      s.rows.map(r=>[r.number,r.dueDate,statusLabels[r.status],c.currency,r.grace,r.tea??sc.input.tea,r.teq??sc.teq,r.opening,r.interest,r.payment,r.principal,r.closing,r.lateFee,r.totalPaid,r.paidDate??""]));
+      ["Cuota","Vencimiento","Estado","Moneda","Gracia","TEA",periodLabel(sc.input.frequency),"Saldo inicial","Interés","Cuota pactada","Capital","Saldo final","Mora","Pago recibido","Fecha de pago","Días de atraso","Por cobrar"],
+      s.rows.map(r=>[r.number,r.dueDate,statusLabels[r.status],c.currency,r.grace,r.tea??sc.input.tea,r.teq??sc.teq,r.opening,r.interest,r.payment,r.principal,r.closing,r.lateFee,r.totalPaid,r.paidDate??"",r.daysLate,r.pending]));
   }
   return <>
     <button className="text-button back-link" onClick={()=>go(client?"portal":"cronograma")}><ArrowLeft size={16}/> {client?"Mi cuenta":"Créditos"}</button>

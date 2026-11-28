@@ -41,12 +41,12 @@ test("las vistas con datos PostgreSQL presentan recorridos y valores financieros
       assert.doesNotMatch(markup,/>NaN<|>undefined</);
       return markup;
     });
-    for(const text of ["728.53","4,515.16","Pago recibido","Mora a la fecha","Gracia total","TEQ","25.0000000 %"])
+    for(const text of ["728.53","4,515.16","Pago recibido","Días de atraso","Saldo inicial","TEQ","25.0000000"])
       assert.ok(html[6].includes(text),text);
     for(const label of ["Por cobrar en PEN","Por cobrar en USD","Intereses por mora"])
       assert.ok(html[8].includes(label),label);
     assert.doesNotMatch(html[10],/quincenal/i);
-    for(const label of ["11 días","2,011.17","691.02","26/10/2026","26/11/2026","26/12/2026","TEM","Comparación de gracia","Restablecer fila 1"])
+    for(const label of ["11 días","2,011.17","691.02","2026-10-26","2026-11-26","2026-12-26","TEM","Comparación de gracia","Fórmulas de la cuota 1","Cuota total"])
       assert.ok(html[15].includes(label),label);
     assert.ok(html[15].indexOf("Cronograma editable")<html[15].indexOf("Comparación de gracia"));
   } finally {await pool.end();}

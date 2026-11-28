@@ -65,7 +65,7 @@ function RequestModal({client,product,onClose,onDone}:{client:ClientRow;product:
   const effective=product.sale_mode==="AMBOS"?mode:product.sale_mode,single=effective==="UNICO";
   const payload={packageId:product.id,mode:effective,months:single?0:months,frequency:"MENSUAL",grace:single?"":"S".repeat(months)};
   function change(action:()=>void){action();setQuote(null);setError(null);}
-  return <Modal title={product.name} onClose={onClose} busy={submission.busy}>
+  return <Modal wide={!!quote} title={product.name} onClose={onClose} busy={submission.busy}>
     <div className="modal-body" ref={region}>
       <p className="modal-price">Monto a financiar <strong className="mono">{fmt(quote?.schedule.input.amount??product.amount,product.currency)}</strong></p>
       <form className="form-stack" onSubmit={e=>{
@@ -142,7 +142,7 @@ export function Purchase({data,store,onDone}:{data:Data;store:StoreRow;onDone:(i
   function term(n:number){setMonths(n);setGrace("S".repeat(n));setSteps([]);}
   return <>
     <PageTitle title="Nueva venta" subtitle="Cotice las condiciones del cliente antes de registrar el crédito."/>
-    {!eligible.length?<section className="card"><Empty>Primero registre o apruebe a un cliente con línea de crédito.</Empty></section>:<div className="purchase-layout">
+    {!eligible.length?<section className="card"><Empty>Primero registre o apruebe a un cliente con línea de crédito.</Empty></section>:<div className={quote?"purchase-layout reviewed":"purchase-layout"}>
       <section className="card">
         <div className="card-head"><h2>{quote?"Vista previa de la venta":"Datos de la venta"}</h2></div>
         <div className="card-body" ref={region}>
@@ -238,7 +238,7 @@ function RequestDetail({request:r,client,readOnly,onClose,refresh,notify,go}:{
   if(reject)return <EditForm title="Rechazar solicitud" submitLabel="Confirmar rechazo" onClose={()=>setReject(false)} onSave={async(f,k)=>{
     await api("requests/resolve",{id:r.id,action:"rechazar",note:textValue(f,"note"),idempotencyKey:k});await refresh();notify("Solicitud rechazada.");onClose();
   }}>{err=><Field label="Motivo para el cliente" hint="Explique por qué se rechaza esta compra." error={err}><textarea name="note" rows={3} required maxLength={300}/></Field>}</EditForm>;
-  return <Modal title={r.package_name} onClose={onClose} busy={submission.busy}>
+  return <Modal wide={!!schedule} title={r.package_name} onClose={onClose} busy={submission.busy}>
     <div className="modal-body form-stack" ref={region}>
       <div className="split"><p>{!client&&r.client_name+" · "}{date(r.purchase_date)} · {fmt(r.amount,r.currency)}</p><Badge status={r.status}/></div>
       {r.note&&<p className="banner">{r.note}</p>}

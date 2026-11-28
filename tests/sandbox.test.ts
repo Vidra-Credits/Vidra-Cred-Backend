@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {sandbox, type SandboxEdits} from '../src/lib/sandbox';
-import {D, money, sum, scenario, RuleError, type CreditInput} from '../src/lib/finance';
+import {D, money, sum, scenario, POLICY_LIMITS, RuleError, type CreditInput} from '../src/lib/finance';
 const input:CreditInput={amount:'3000',tea:'0.2',currency:'PEN',months:3,grace:'SSSSSS',purchaseDate:'2026-07-08',cutDay:25,payDay:5};
 const delays=[10,10,10,10,10,10];
 function reconciles(edits:SandboxEdits){
@@ -61,4 +61,16 @@ test('gracias editables, errores recuperables y saldo final manual explícito',(
   for(const edit of [{tea:'abc'},{driver:'payment',value:'999999'},{dueDate:'2026-01-01'},{paidDate:'2026-01-01'},{grace:'T',lateFee:'10'}] as const){
     assert.throws(()=>sandbox(input,delays,'0.35',{0:edit}),RuleError);
   }
+});
+
+test('la simulación con política valida límites, mora equivalente y tasas editadas',()=>{
+  const run=(i:CreditInput,mora:string,edits:SandboxEdits={})=>sandbox(i,delays,mora,edits,POLICY_LIMITS);
+  assert.throws(()=>run({...input,amount:'900'},'0.35'),/1000 a 5000/);
+  assert.throws(()=>run({...input,amount:'5100'},'0.35'),/1000 a 5000/);
+  assert.throws(()=>run({...input,amount:'3050'},'0.35'),/múltiplo/);
+  assert.throws(()=>run({...input,months:6,grace:'SSSSSSSSSSSS'},'0.35'),/1 y 5/);
+  assert.throws(()=>run(input,'0.19'),/mora.*igual o mayor/i);
+  assert.throws(()=>run(input,'0.2',{1:{tea:'0.23'}}),/mora.*igual o mayor/i);
+  assert.throws(()=>run(input,'0.35',{1:{tea:'0.26'}}),/15 % y 25 %/);
+  assert.doesNotThrow(()=>run({...input,amount:'5000',months:5,grace:'SSSSSSSSSS'},'0.20'));
 });

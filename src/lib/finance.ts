@@ -49,6 +49,11 @@ export function decimalInput(value: unknown,field: string,min: string,max: strin
   if(typeof value!=="string" || !/^\d+(\.\d{1,12})?$/.test(value) || !new D(value).isFinite() || new D(value).lt(min)||new D(value).gt(max)) throw new RuleError(`Valor permitido: ${min} a ${max}.`,field);
   return new D(value);
 }
+export function validateMoratoryRate(mora: Decimal.Value, tea: Decimal.Value, field="mora") {
+  if(new D(mora).lt(tea)) {
+    throw new RuleError("La TEA moratoria debe ser igual o mayor que la TEA compensatoria.",field);
+  }
+}
 /** Cambio de TEA durante el plazo: desde la cuota `from` (2..n) rige `tea`. */
 export type RateStep = { from: number; tea: string };
 export type SaleMode = "CUOTAS" | "UNICO";

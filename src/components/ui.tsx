@@ -131,7 +131,7 @@ export function Metric({label,value,note,accent=false}:{label:string;value:strin
   return <div className={"metric"+(accent?" accent":"")}><span>{label}</span><strong>{value}</strong>{note&&<small>{note}</small>}</div>;
 }
 
-export function Modal({title,children,onClose,busy=false}:{title:string;children:ReactNode;onClose:()=>void;busy?:boolean}) {
+export function Modal({title,children,onClose,busy=false,wide=false}:{title:string;children:ReactNode;onClose:()=>void;busy?:boolean;wide?:boolean}) {
   const dialog=useRef<HTMLDialogElement>(null),heading=useRef<HTMLHeadingElement>(null),id=useId();
   useEffect(()=>{
     const trigger=document.activeElement as HTMLElement|null;
@@ -143,7 +143,7 @@ export function Modal({title,children,onClose,busy=false}:{title:string;children
       if(trigger?.isConnected)trigger.focus();
     };
   },[]);
-  return <dialog className="modal" ref={dialog} aria-labelledby={id} onCancel={e=>{e.preventDefault();if(!busy)onClose();}}>
+  return <dialog className={wide?"modal modal-wide":"modal"} ref={dialog} aria-labelledby={id} onCancel={e=>{e.preventDefault();if(!busy)onClose();}}>
     <header className="modal-head"><h2 id={id} ref={heading} tabIndex={-1}>{title}</h2>
       <button type="button" className="icon-button" aria-label="Cerrar" onClick={onClose} disabled={busy}><X size={20}/></button>
     </header>

@@ -252,9 +252,12 @@ test("autoservicio con pago único: la solicitud respeta la modalidad y el créd
 
 
 test("enunciado mensual: contrato persistido, cuota total y mora nominal pactada, sin alterar históricos",async()=>{
-  const mora=teaFromNominal("0.12","MENSUAL").toFixed(12);
+  const below=teaFromNominal("0.12","MENSUAL").toFixed(12);
+  await assert.rejects(()=>saveEntity(business,"clients",newClient({document:"20512345901",
+    moraTea:below,moraKind:"TNA",moraInput:"0.12",moraCompounding:"MENSUAL"})),/igual o mayor/);
+  const mora=teaFromNominal("0.26","MENSUAL").toFixed(12);
   await assert.rejects(()=>saveEntity(business,"clients",newClient({document:"20512345901",moraTea:"0.35",moraKind:"TNA",moraInput:"0.12",moraCompounding:"MENSUAL"})),/no corresponde/);
-  const person=await saveEntity(business,"clients",newClient({document:"20512345901",name:"Cliente mensual",cutDay:20,payDay:26,moraTea:mora,moraKind:"TNA",moraInput:"0.12",moraCompounding:"MENSUAL"}));
+  const person=await saveEntity(business,"clients",newClient({document:"20512345901",name:"Cliente mensual",cutDay:20,payDay:26,moraTea:mora,moraKind:"TNA",moraInput:"0.26",moraCompounding:"MENSUAL"}));
   const input={storeId:IDS.store,clientId:person.id,packageId:IDS.goteros,purchaseDate:"2026-06-15",months:3,grace:"SSS",frequency:"MENSUAL" as const};
   const q=await getQuote(pool,business,input);
   assert.deepEqual(q.schedule.rows.map(r=>r.dueDate),["2026-07-26","2026-08-26","2026-09-26"]);

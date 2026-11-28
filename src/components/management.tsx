@@ -70,7 +70,7 @@ function RateFields({client,moratory=false,error}:{client?:ClientRow;moratory?:b
     <Field label={moratory?"Tipo de tasa moratoria":"Tipo de tasa compensatoria"} hint="TEA efectiva o TNA nominal." error={error}>
       <select name={kindName} value={kind} onChange={e=>setKind(e.target.value as "TEA"|"TNA")}><option>TEA</option><option>TNA</option></select>
     </Field>
-    <Field label={moratory?"Tasa moratoria (%)":"Tasa compensatoria (%)"} hint={moratory?"TEA equivalente de 0 % a 200 %.":"TEA equivalente de 15 % a 25 %."} error={error}>
+    <Field label={moratory?"Tasa moratoria (%)":"Tasa compensatoria (%)"} hint={moratory?"La TEA equivalente debe alcanzar la compensatoria y no exceder 200 %.":"TEA equivalente de 15 % a 25 %."} error={error}>
       <input name={rateName} type="number" min={0} max={moratory?200:100} step="any" required defaultValue={new D(raw).mul(100).toString()}/>
     </Field>
     {kind==="TNA"&&<Field label={moratory?"Capitalización moratoria":"Capitalización compensatoria"} hint="Frecuencia con que se capitaliza la TNA." error={error}>

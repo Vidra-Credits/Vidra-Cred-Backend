@@ -1,7 +1,7 @@
 import {createHash,randomUUID} from "node:crypto";
 import {z} from "zod";
 import {pool,transaction,type DB} from "./db";
-import {D,money,simulate,statement,creditLine,lateFee,today,dateOnly,decimalInput,teaFromNominal,COMPOUNDING,RuleError,type Compounding,type Credit,type Payment,type Schedule} from "./finance";
+import {D,money,simulate,statement,creditLine,lateFee,today,dateOnly,decimalInput,teaFromNominal,validateMoratoryRate,COMPOUNDING,POLICY,RuleError,type Compounding,type Credit,type Payment,type Schedule} from "./finance";
 import {legalReference} from "./legal";
 import {type Actor,requireRole,requireStore,audit,hashPassword} from "./security";
 import {readProductImage,type ProductImage} from "./product-image";
@@ -40,6 +40,10 @@ export async function getQuote(db:DB,actor:Actor,input:QuoteInput,lock=false) {
   if(p.sale_mode!=="AMBOS"&&p.sale_mode!==mode)throw new RuleError(p.sale_mode==="UNICO"?"Este producto solo se vende a pago único en la fecha de pago.":"Este producto solo se vende en cuotas.","mode");
   // Corte y pago: los del cliente si los tiene pactados; si no, los de la tienda.
   const schedule=simulate({amount:p.amount,currency:p.currency,tea:c.tea,purchaseDate:input.purchaseDate,months:input.months,cutDay:c.cut_day??t.cut_day,payDay:c.pay_day??t.pay_day,grace:input.grace,mode,rateSteps,frequency:input.frequency??"MENSUAL",mora:c.mora_tea??"0.35"});
+  for(const row of schedule.rows) {
+    validateMoratoryRate(schedule.input.mora??POLICY.mora,row.tea??schedule.input.tea,
+      rateSteps.length?"rateSteps":"clientId");
+  }
   const credits=await loadCredits(db,input.storeId,c.id);
   const line=creditLine(c.credit_limit,credits,input.purchaseDate),lineNow=creditLine(c.credit_limit,credits,today());
   // A backdated purchase must fit both its original date and the financial balance at booking.
@@ -166,6 +170,7 @@ async function saveEntityInTransaction(db:DB,actor:Actor,kind:string,raw:unknown
       const id=v.id??randomUUID();
       if(v.id) {
         const prior=await db.query("SELECT * FROM clients WHERE id=$1 AND store_id=$2 FOR UPDATE",[id,v.storeId]);if(!prior.rows[0])throw new RuleError("Cliente no disponible.","general",404);
+        if(v.moraTea===undefined)validateMoratoryRate(prior.rows[0].mora_tea??POLICY.mora,v.tea,"moraTea");
         if(v.approval==="RECHAZADO"&&!v.approvalNote?.trim())throw new RuleError("Indique el motivo del rechazo para el cliente.","approvalNote");
         if(prior.rows[0].currency!==v.currency&&(await db.query("SELECT 1 FROM credits WHERE client_id=$1 LIMIT 1",[id])).rowCount)throw new RuleError("Un cliente con créditos conserva su moneda.","currency");
         await db.query("UPDATE clients SET name=$3,document=$4,phone=$5,address=$6,currency=$7,tea=$8,credit_limit=$9,max_months=$10,active=$11,approval=COALESCE($12,approval),approval_note=COALESCE($13,approval_note),cut_day=$14,pay_day=$15,rate_kind=$16,rate_input=$17,compounding=$18 WHERE id=$1 AND store_id=$2",[id,v.storeId,v.name,v.document,v.phone,v.address,v.currency,v.tea,v.creditLimit,v.maxMonths,v.active,v.approval??null,v.approvalNote??null,cutDay,payDay,v.rateKind,rateInput,compounding]);
@@ -177,6 +182,7 @@ async function saveEntityInTransaction(db:DB,actor:Actor,kind:string,raw:unknown
           decimalInput(v.moraInput,"moraTea","0","2");
           if(!teaFromNominal(v.moraInput,v.moraCompounding).toDecimalPlaces(12).eq(mora.toDecimalPlaces(12)))throw new RuleError("La mora efectiva no corresponde a la nominal pactada.","moraTea");
         }
+        validateMoratoryRate(mora,v.tea,"moraTea");
         await db.query("UPDATE clients SET mora_tea=$2,mora_kind=$3,mora_input=$4,mora_compounding=$5 WHERE id=$1",[id,mora.toFixed(12),kind,kind==="TNA"?v.moraInput:null,kind==="TNA"?v.moraCompounding:null]);
       }
       if(v.portalEmail||v.portalPassword) {

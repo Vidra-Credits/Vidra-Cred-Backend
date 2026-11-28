@@ -1,19 +1,20 @@
 import type Decimal from "decimal.js";
-import {D, money, sum, simulate, lateFee, addDays, daysBetween, dateOnly, RuleError, periodsPerMonth, periodDays, EXPLORE_LIMITS, MAX_DELAY_DAYS, type CreditInput, type Grace, type ScenarioRow} from './finance';
+import {D, money, sum, simulate, lateFee, addDays, daysBetween, dateOnly, RuleError, periodsPerMonth, periodDays, EXPLORE_LIMITS, MAX_DELAY_DAYS, validateMoratoryRate, type Limits, type CreditInput, type Grace, type ScenarioRow} from './finance';
 
 export type Driver = 'opening'|'interest'|'payment'|'principal'|'closing'|'total';
 export type CellEdit = {dueDate?:string; grace?:Grace; tea?:string; teq?:string; paidDate?:string; lateFee?:string; driver?:Driver; value?:string};
 export type SandboxEdits = Record<number,CellEdit>;
 type AnnuityTrace={row:number;opening:string;growth:string;factor:string};
 /** Each row's last edited financial value drives its dependent formulas. Rates and balances carry forward. */
-export function sandbox(input:CreditInput, delays:number[], moraTea:string, edits:SandboxEdits={}) {
+export function sandbox(input:CreditInput, delays:number[], moraTea:string, edits:SandboxEdits={}, limits?:Limits) {
   edits=Object.fromEntries(Object.entries(edits).map(([k,v])=>[k,{...v}]));
   // An opening balance is the previous row's closing balance, never an independent constant.
   for(let k=1;k<(input.mode==='UNICO'?1:input.months*periodsPerMonth(input.frequency));k++)if(edits[k]?.driver==='opening'){
     edits[k-1]={...edits[k-1],driver:'closing',value:edits[k].value};delete edits[k].driver;delete edits[k].value;
   }
-  const schedule=simulate(input,{...EXPLORE_LIMITS,teaMin:"0"}), mora=new D(moraTea);
+  const schedule=simulate(input,limits??{...EXPLORE_LIMITS,teaMin:"0"}), mora=new D(moraTea);
   if(!mora.isFinite()||mora.lt(0)||mora.gt(2))throw new RuleError('La tasa moratoria debe estar entre 0 y 200 %.');
+  if(limits)validateMoratoryRate(mora,input.tea);
   const value=(s:string)=>{if(!/^\d+(\.\d{1,12})?$/.test(s))throw new RuleError('Ingrese un número no negativo con hasta 12 decimales.');return new D(s);};
   let balance=new D(schedule.initialBalance), previousPaid='', previousDue=input.mode==='UNICO'?input.purchaseDate:schedule.baseDate, carriedTea:string|undefined, dirty=false, dateShift=0, ordinary:Decimal|null=null, lastRate:Decimal|null=null;
   const rows:ScenarioRow[]=[],calculations:{annuity:AnnuityTrace|null;edit:CellEdit}[]=[];
@@ -25,7 +26,14 @@ export function sandbox(input:CreditInput, delays:number[], moraTea:string, edit
     // A contracted rate step starts a new rate segment unless this row sets its own rate.
     if(k>0&&base.tea!==schedule.rows[k-1].tea&&edit.tea===undefined&&edit.teq===undefined)carriedTea=undefined;
     const tea=new D(carriedTea??base.tea??input.tea), q=tea.plus(1).pow(new D(periodDays(input.frequency)).div(360)).minus(1);
-    if(tea.gt(10))throw new RuleError('La TEA por fila no debe superar 1000 %.');
+    if(limits) {
+      const annual=tea.toDecimalPlaces(12);
+      if(annual.lt(limits.teaMin)||annual.gt(limits.teaMax)) {
+        throw new RuleError(`Cuota ${k+1}: la TEA debe estar entre ${new D(limits.teaMin).mul(100)} % y ${new D(limits.teaMax).mul(100)} %.`,"tea");
+      }
+      validateMoratoryRate(mora,annual,edit.tea!==undefined||edit.teq!==undefined?"tea":"mora");
+    } else if(tea.gt(10))throw new RuleError("La TEA por fila no debe superar 1000 %.");
+
     if(edit.driver||edit.grace!==undefined||edit.tea!==undefined||edit.teq!==undefined){dirty=true;ordinary=null;}
     if(lastRate&&!lastRate.eq(q))ordinary=null;lastRate=q;
     if(edit.dueDate)dateShift=daysBetween(base.dueDate,dateOnly(edit.dueDate));

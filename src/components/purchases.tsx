@@ -67,7 +67,7 @@ function RequestModal({client,product,onClose,onDone}:{client:ClientRow;product:
   function change(action:()=>void){action();setQuote(null);setError(null);}
   return <Modal title={product.name} onClose={onClose} busy={submission.busy}>
     <div className="modal-body" ref={region}>
-      <p className="modal-price">Precio a crédito <strong className="mono">{fmt(quote?.schedule.input.amount??product.amount,product.currency)}</strong></p>
+      <p className="modal-price">Monto a financiar <strong className="mono">{fmt(quote?.schedule.input.amount??product.amount,product.currency)}</strong></p>
       <form className="form-stack" onSubmit={e=>{
         e.preventDefault();
         void submission.run(async()=>{

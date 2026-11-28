@@ -108,7 +108,7 @@ export async function registerPayment(actor:Actor,raw:unknown) {
 }
 const storeSchema=z.object({id:uuid.optional(),name:z.string().trim().min(2).max(120),business:z.string().trim().min(2).max(60),ruc:z.string().regex(/^\d{11}$/),cutDay:z.number().int().min(1).max(31),payDay:z.number().int().min(1).max(30),active:z.boolean(),adminEmail:z.email().max(120).optional(),adminName:z.string().min(2).max(120).optional(),adminPassword:z.string().min(10).max(128).optional()}).strict();
 const clientSchema=z.object({id:uuid.optional(),storeId:uuid,name:z.string().trim().min(2).max(150),document:z.string().regex(/^(\d{8}|\d{11})$/),phone:z.string().max(20),address:z.string().max(200),currency:z.enum(["PEN","USD"]),tea:z.string(),creditLimit:z.string(),maxMonths:z.number().int().min(1).max(5),active:z.boolean(),cutDay:z.number().int().min(1).max(31).nullable().optional(),payDay:z.number().int().min(1).max(30).nullable().optional(),rateKind:z.enum(["TEA","TNA"]).default("TEA"),rateInput:z.string().max(20).nullable().optional(),compounding:z.enum(Object.keys(COMPOUNDING) as [Compounding,...Compounding[]]).nullable().optional(),moraTea:z.string().optional(),moraKind:z.enum(["TEA","TNA"]).optional(),moraInput:z.string().nullable().optional(),moraCompounding:z.enum(Object.keys(COMPOUNDING) as [Compounding,...Compounding[]]).nullable().optional(),approval:z.enum(["PENDIENTE","APROBADO","RECHAZADO"]).optional(),approvalNote:z.string().max(300).optional(),portalEmail:z.email().max(120).optional(),portalPassword:z.string().min(10).max(128).optional()}).strict();
-const packageSchema=z.object({id:uuid.optional(),storeId:uuid,name:z.string().trim().min(2).max(120),detail:z.string().max(500),currency:z.enum(["PEN","USD"]),amount:z.string(),cashPrice:z.string().optional(),brand:z.string().trim().max(80).default(""),supplier:z.string().trim().max(120).default(""),unit:z.string().trim().min(1,"Indique la unidad de medida.").max(30).default("Paquete"),saleMode:z.enum(["UNICO","CUOTAS","AMBOS"]).default("AMBOS"),image:z.string().regex(/^\/productos\/[A-Za-z0-9._-]+$/).max(200).nullable().optional(),removeImage:z.boolean().default(false),active:z.boolean()}).strict();
+const packageSchema=z.object({id:uuid.optional(),storeId:uuid,name:z.string().trim().min(2).max(120),detail:z.string().max(500),currency:z.enum(["PEN","USD"]),amount:z.string(),cashPrice:z.string(),brand:z.string().trim().max(80).default(""),supplier:z.string().trim().max(120).default(""),unit:z.string().trim().min(1,"Indique la unidad de medida.").max(30).default("Paquete"),saleMode:z.enum(["UNICO","CUOTAS","AMBOS"]).default("AMBOS"),image:z.string().regex(/^\/productos\/[A-Za-z0-9._-]+$/).max(200).nullable().optional(),removeImage:z.boolean().default(false),active:z.boolean()}).strict();
 export async function saveEntity(actor:Actor,kind:string,raw:unknown,file?:File,rawKey?:string|null) {
   requireRole(actor,kind==="stores"?["SISTEMA"]:["SISTEMA","NEGOCIO"]);
   const key=rawKey?uuid.parse(rawKey):null;
@@ -192,10 +192,10 @@ async function saveEntityInTransaction(db:DB,actor:Actor,kind:string,raw:unknown
       if(photo&&v.removeImage)throw new RuleError("Elija una imagen o quite la anterior.","image");
       simulate({amount:v.amount,currency:v.currency,tea:"0.20",purchaseDate:today(),months:1,cutDay:25,payDay:5,grace:"SS"});
       // amount = precio de lista (a crédito); el precio al contado nunca lo supera.
-      const cash=v.cashPrice??v.amount;
+      const cash=v.cashPrice;
       decimalInput(cash,"cashPrice","0.01","5000");
       if(!new D(cash).eq(money(cash)))throw new RuleError("Use como máximo dos decimales.","cashPrice");
-      if(new D(cash).gt(v.amount))throw new RuleError("El precio al contado no puede superar el precio de lista.","cashPrice");
+      if(new D(cash).gte(v.amount))throw new RuleError("El precio al contado debe ser menor que el monto financiado.","cashPrice");
       const id=v.id??randomUUID();
       const values=[id,v.storeId,v.name,v.detail,v.currency,v.amount,v.active,v.image??null,cash,v.brand,v.supplier,v.unit,v.saleMode,photo?.data??null,photo?.mime??null];
       if(v.id) {
